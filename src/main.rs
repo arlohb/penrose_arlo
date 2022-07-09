@@ -9,14 +9,12 @@ fn setup_logger() {
         simplelog::LevelFilter::Info,
         simplelog::Config::default(),
         std::fs::File::create(log_file).unwrap(),
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 use penrose::{
-    contrib::{
-        extensions::Scratchpad,
-        hooks::LayoutSymbolAsRootName,
-    },
+    contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
     core::{
         config::Config,
         helpers::spawn,
