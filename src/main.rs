@@ -24,10 +24,10 @@ use penrose::{
     xcb::{XcbConnection, XcbHooks},
 };
 
-use std::{collections::HashMap, process::Command};
+use std::collections::HashMap;
 
 fn async_setup() {
-    let _ = Command::new("nitrogen").arg("--restore").spawn();
+    let _ = spawn("nitrogen --restore");
 }
 
 fn main() -> penrose::Result<()> {
