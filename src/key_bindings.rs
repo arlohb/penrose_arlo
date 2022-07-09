@@ -12,9 +12,7 @@ impl KeyMod {
     pub const CTRL: u16 = 4;
 }
 
-pub type BindingFn = dyn FnMut(&mut WindowManager<XcbConnection>);
-pub type PenroseBindingFn =
-    Box<dyn FnMut(&mut WindowManager<XcbConnection>) -> penrose::Result<()>>;
+pub type BindingFn = dyn FnMut(&mut WindowManager<XcbConnection>) -> penrose::Result<()>;
 pub type KnownCodes = HashMap<String, u8>;
 
 pub struct BetterKeyBindings {
@@ -67,22 +65,19 @@ impl BetterKeyBindings {
     pub fn add(
         &mut self,
         key: &'static str,
-        func: impl FnMut(&mut WindowManager<XcbConnection>) + 'static,
+        func: impl FnMut(&mut WindowManager<XcbConnection>) -> penrose::Result<()> + 'static,
     ) {
         self.bindings.insert(key, Box::new(func));
     }
 
-    pub fn into_penrose_bindings(self) -> HashMap<KeyCode, PenroseBindingFn> {
+    pub fn into_penrose_bindings(self) -> HashMap<KeyCode, Box<BindingFn>> {
         self.bindings
             .into_iter()
             .map(|(key_str, mut func)| {
                 let key = Self::key_parse(&self.codes, key_str);
 
-                let penrose_fn: PenroseBindingFn =
-                    Box::new(move |wm: &mut WindowManager<XcbConnection>| {
-                        func(wm);
-                        Result::Ok(())
-                    });
+                let penrose_fn: Box<BindingFn> =
+                    Box::new(move |wm: &mut WindowManager<XcbConnection>| func(wm));
 
                 (key, penrose_fn)
             })

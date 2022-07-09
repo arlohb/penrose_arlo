@@ -112,27 +112,33 @@ fn main() -> penrose::Result<()> {
     let mut keys = BetterKeyBindings::new();
 
     keys.add("super space", |_wm| {
-        let _ = spawn("rofi -show run");
+        spawn("rofi -show run")?;
+        Ok(())
     });
 
     keys.add("super ctrl escape", |wm| {
-        let _ = wm.exit();
+        wm.exit()?;
+        Ok(())
     });
 
     keys.add("super T", |_wm| {
-        let _ = spawn("kitty");
+        spawn("kitty")?;
+        Ok(())
     });
 
     keys.add("super Q", |wm| {
-        let _ = wm.kill_client();
+        wm.kill_client()?;
+        Ok(())
     });
 
     keys.add("super E", |_wm| {
-        let _ = spawn("thunar");
+        spawn("thunar")?;
+        Ok(())
     });
 
     keys.add("super slash", move |_wm| {
-        let _ = (sp.toggle())(_wm);
+        (sp.toggle())(_wm)?;
+        Ok(())
     });
 
     // let key_bindings = gen_keybindings! {
