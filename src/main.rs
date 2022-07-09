@@ -2,10 +2,13 @@ mod key_bindings;
 pub use key_bindings::*;
 
 fn setup_logger() {
+    let home = std::env::var("HOME").unwrap();
+    let log_file = format!("{home}/.penrose.log");
+
     simplelog::WriteLogger::init(
         simplelog::LevelFilter::Info,
         simplelog::Config::default(),
-        std::fs::File::create("/home/arlo/.penrose.log").unwrap(),
+        std::fs::File::create(log_file).unwrap(),
     ).unwrap();
 }
 
