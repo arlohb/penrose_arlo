@@ -11,6 +11,10 @@ fn setup_logger() {
         std::fs::File::create(log_file).unwrap(),
     )
     .unwrap();
+
+    std::panic::set_hook(Box::new(|info| {
+        tracing::error!("{}", info);
+    }));
 }
 
 use penrose::{
