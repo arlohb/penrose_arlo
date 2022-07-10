@@ -209,6 +209,23 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
+    // Used `xev` to find the names for these
+
+    keys.add("XF86AudioRaiseVolume", |_wm| {
+        spawn("amixer set Master 5%+")?;
+        Ok(())
+    });
+
+    keys.add("XF86AudioLowerVolume", |_wm| {
+        spawn("amixer set Master 5%-")?;
+        Ok(())
+    });
+
+    keys.add("XF86AudioMute", |_wm| {
+        spawn("amixer set Master toggle")?;
+        Ok(())
+    });
+
     let mut wm = WindowManager::new(
         config,
         XcbConnection::new()?,
