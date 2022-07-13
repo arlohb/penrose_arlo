@@ -1,4 +1,6 @@
+mod command_listener;
 mod key_bindings;
+use command_listener::{CommandListener, Message};
 pub use key_bindings::*;
 
 fn setup_logger() {
@@ -29,6 +31,7 @@ use penrose::{
     draw::*,
     xcb::{XcbConnection, XcbDraw, XcbDrawContext, XcbHooks},
 };
+use playerctl::PlayerCtl;
 
 use std::collections::HashMap;
 
@@ -36,7 +39,7 @@ fn async_setup() {
     let _ = spawn("nitrogen --restore");
 }
 
-const BAR_HEIGHT: usize = 18;
+const BAR_HEIGHT: usize = 22;
 
 const FIRA: &str = "Fira Code";
 
@@ -56,9 +59,132 @@ impl Dracula {
     pub const YELLOW: u32 = 0xf1fa8cff;
 }
 
+pub enum Align {
+    Left,
+    Center,
+    Right,
+}
+
+pub struct ReactiveText {
+    text: Box<dyn FnMut() -> String>,
+    text_style: TextStyle,
+    align: Align,
+    extent: Option<(f64, f64)>,
+    last_updated: std::time::Instant,
+    update_interval: std::time::Duration,
+}
+
+impl ReactiveText {
+    pub fn new(
+        text: impl FnMut() -> String + 'static,
+        text_style: TextStyle,
+        align: Align,
+        update_interval: std::time::Duration,
+    ) -> Box<Self> {
+        Box::new(Self {
+            text: Box::new(text),
+            text_style,
+            align,
+            extent: None,
+            last_updated: std::time::Instant::now(),
+            update_interval,
+        })
+    }
+}
+
+impl<X> penrose::core::Hook<X> for ReactiveText where X: penrose::core::xconnection::XConn {}
+
+impl Widget for ReactiveText {
+    fn draw(
+        &mut self,
+        ctx: &mut dyn DrawContext,
+        _screen: usize,
+        _screen_has_focus: bool,
+        _w: f64,
+        _h: f64,
+    ) -> Result<()> {
+        ctx.font(&self.text_style.font, self.text_style.point_size)?;
+        ctx.color(&self.text_style.fg);
+
+        let text = (self.text)();
+
+        // let extent = self.current_extent(ctx, h)?;
+
+        // ctx.set_x_offset(match self.align {
+        //     Align::Left => 0.,
+        //     Align::Center => (w - extent.0) / 2.,
+        //     Align::Right => w - extent.0,
+        // });
+
+        ctx.text(&text, 1., self.text_style.padding)?;
+
+        self.last_updated = std::time::Instant::now();
+
+        Ok(())
+    }
+
+    fn current_extent(&mut self, ctx: &mut dyn DrawContext, _h: f64) -> Result<(f64, f64)> {
+        match self.extent {
+            Some(extent) => Ok(extent),
+            None => {
+                let (l, r) = self.text_style.padding;
+                ctx.font(&self.text_style.font, self.text_style.point_size)?;
+                let (w, h) = ctx.text_extent(&(self.text)())?;
+                let extent = (w + l + r + 0.1, h + 0.1);
+                self.extent = Some(extent);
+                Ok(extent)
+            }
+        }
+    }
+
+    fn require_draw(&self) -> bool {
+        // self.last_updated.elapsed() > self.update_interval
+        false
+    }
+
+    fn is_greedy(&self) -> bool {
+        true
+    }
+}
+
 fn main() -> penrose::Result<()> {
     setup_logger();
     std::thread::spawn(async_setup);
+
+    // let (command_sender, command_listener) = CommandListener::new();
+    // command_sender.send(Message::new("Hello thread!!")).unwrap();
+
+    // std::thread::spawn(move || {
+    //     command_listener.listen();
+    // });
+
+    std::thread::spawn(|| loop {
+        let child = std::process::Command::new("/bin/ls")
+            // .arg("-c")
+            // .arg("ls")
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        match child.wait_with_output() {
+            Ok(output) => {
+                let stdout = String::from_utf8(output.stdout).unwrap();
+                tracing::info!("{}", stdout);
+            }
+            Err(e) => {
+                tracing::error!("{:?}", e);
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    });
+
+    let text_style = TextStyle {
+        font: FIRA.to_string(),
+        point_size: 12,
+        fg: Dracula::FG.into(),
+        bg: None,
+        padding: (3., 3.),
+    };
 
     let bar = StatusBar::<XcbDrawContext, XcbDraw, XcbConnection>::try_new(
         XcbDraw::new()?,
@@ -66,74 +192,52 @@ fn main() -> penrose::Result<()> {
         BAR_HEIGHT,
         Dracula::BG,
         &[FIRA],
-        // vec![
-        // Box::new(widget::ActiveWindowName::new(
-        //     &TextStyle {
-        //         font: FIRA.to_string(),
-        //         point_size: 12,
-        //         fg: Dracula::FG.into(),
-        //         bg: None,
-        //         padding: (0., 0.),
-        //     },
-        //     100,
-        //     false,
-        //     false,
-        // )),
-        // Box::new(widget::Text::new(
-        //     "Penrose Arlo",
-        //     &TextStyle {
-        //         font: FIRA.to_string(),
-        //         point_size: 12,
-        //         fg: Dracula::FG.into(),
-        //         bg: None,
-        //         padding: (-10., 2.),
-        //     },
-        //     true,
-        //     true,
-        // )),
-        // Box::new(widget::Text::new(
-        //     "BG",
-        //     &TextStyle {
-        //         font: FIRA.to_string(),
-        //         point_size: 12,
-        //         fg: Dracula::FG.into(),
-        //         bg: Some(Dracula::BG.into()),
-        //         padding: (-10., 2.),
-        //     },
-        //     false,
-        //     false,
-        // )),
         vec![
-            ("BG", Dracula::BG),
-            ("CURRENT_LINE", Dracula::CURRENT_LINE),
-            ("SELECTION", Dracula::SELECTION),
-            ("FG", Dracula::FG),
-            ("COMMENT", Dracula::COMMENT),
-            ("CYAN", Dracula::CYAN),
-            ("GREEN", Dracula::GREEN),
-            ("ORANGE", Dracula::ORANGE),
-            ("PINK", Dracula::PINK),
-            ("PURPLE", Dracula::PURPLE),
-            ("RED", Dracula::RED),
-            ("YELLOW", Dracula::YELLOW),
-        ]
-        .into_iter()
-        .map(|(name, color)| {
-            Box::new(widget::Text::new(
-                name,
-                &TextStyle {
-                    font: FIRA.to_string(),
-                    point_size: 12,
-                    fg: Dracula::FG.into(),
-                    bg: Some(color.into()),
-                    padding: (12., 12.),
+            // ReactiveText::new(
+            //     || PlayerCtl::metadata().title,
+            //     text_style.clone(),
+            //     Align::Right,
+            //     std::time::Duration::from_secs(5),
+            // ),
+            // ReactiveText::new(
+            //     || "Left".to_string(),
+            //     text_style.clone(),
+            //     Align::Left,
+            //     std::time::Duration::from_secs(5),
+            // ),
+            // ReactiveText::new(
+            //     || "Center".to_string(),
+            //     text_style.clone(),
+            //     Align::Center,
+            //     std::time::Duration::from_secs(5),
+            // ),
+            // ReactiveText::new(
+            //     || "Right".to_string(),
+            //     text_style.clone(),
+            //     Align::Right,
+            //     std::time::Duration::from_secs(5),
+            // ),
+            ReactiveText::new(
+                || {
+                    // let child = std::process::Command::new("bash")
+                    //     .arg("-c")
+                    //     .arg("ls")
+                    //     .stdout(std::process::Stdio::piped())
+                    //     .spawn()
+                    //     .unwrap();
+
+                    // let stdout = child.wait_with_output().unwrap().stdout;
+                    // let output = String::from_utf8(stdout).unwrap();
+
+                    // tracing::info!("ls: {}", output);
+                    // tracing::info!("{}", PlayerCtl::metadata().artist.is_empty());
+                    "Hello".to_string()
                 },
-                false,
-                false,
-            )) as Box<dyn HookableWidget<XcbConnection>>
-        })
-        .collect::<Vec<_>>(),
-        // ],
+                text_style,
+                Align::Left,
+                std::time::Duration::from_secs(5),
+            ),
+        ],
     )?;
 
     // Default number of clients in the main layout area
@@ -229,6 +333,19 @@ fn main() -> penrose::Result<()> {
         spawn("amixer set Master toggle")?;
         Ok(())
     });
+
+    // for i in 0..20 {
+    //     let child = std::process::Command::new("bash")
+    //         .arg("-c")
+    //         .arg("ls")
+    //         .stdout(std::process::Stdio::piped())
+    //         .spawn()
+    //         .unwrap();
+
+    //     let stdout = child.wait_with_output().unwrap().stdout;
+    //     let output = String::from_utf8(stdout).unwrap();
+    //     tracing::info!("{i}: {output}");
+    // }
 
     let mut wm = WindowManager::new(
         config,
