@@ -1,3 +1,7 @@
+# penrose_arlo
+
+This is my config for the [penrose](https://crates.io/crates/penrose) rust window manager library.
+
 # How to setup debian
 
 ```bash
