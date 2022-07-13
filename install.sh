@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install dependencies
-sudo apt install build-essential pkg-config libgtk-3-dev libxcb-randr0-dev
+sudo apt install build-essential pkg-config libgtk-3-dev libxcb-randr0-dev playerctl
 
 # Build
 cargo build --release
