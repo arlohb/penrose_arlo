@@ -3,9 +3,12 @@ mod key_bindings;
 use command_listener::{CommandListener, Message};
 pub use key_bindings::*;
 
+fn home() -> String {
+    std::env::var("HOME").unwrap()
+}
+
 fn setup_logger() {
-    let home = std::env::var("HOME").unwrap();
-    let log_file = format!("{home}/.penrose.log");
+    let log_file = format!("{}/.penrose.log", home());
 
     simplelog::WriteLogger::init(
         simplelog::LevelFilter::Info,
@@ -33,9 +36,18 @@ use penrose::{
 };
 use playerctl::PlayerCtl;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path, process::Command};
 
 fn async_setup() {
+    let screens_script = format!("{}/penrose_arlo/screens.sh", home());
+
+    if Path::new(&screens_script).exists() {
+        let _: std::io::Result<()> = (|| {
+            Command::new("bash").arg(screens_script).spawn()?.wait()?;
+            Ok(())
+        })();
+    };
+
     let _ = spawn("nitrogen --restore");
 }
 
