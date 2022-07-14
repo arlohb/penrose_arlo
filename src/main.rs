@@ -27,7 +27,7 @@ fn setup_logger() {
 use penrose::{
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
     core::{
-        bindings::{MouseEventKind, MouseState, MouseButton},
+        bindings::{MouseButton, MouseEventKind, MouseState},
         config::Config,
         helpers::spawn,
         layout::{bottom_stack, side_stack, Layout, LayoutConf},
