@@ -2,6 +2,8 @@ mod command_listener;
 mod key_bindings;
 use command_listener::{CommandListener, Message};
 pub use key_bindings::*;
+mod new_window_hook;
+pub use new_window_hook::*;
 
 fn home() -> String {
     std::env::var("HOME").unwrap()
@@ -25,6 +27,7 @@ fn setup_logger() {
 use penrose::{
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
     core::{
+        bindings::{MouseEventKind, MouseState, MouseButton},
         config::Config,
         helpers::spawn,
         layout::{bottom_stack, side_stack, Layout, LayoutConf},
@@ -32,7 +35,9 @@ use penrose::{
         ring::Direction,
     },
     draw::*,
+    gen_mousebindings,
     xcb::{XcbConnection, XcbDraw, XcbDrawContext, XcbHooks},
+    Selector,
 };
 use playerctl::PlayerCtl;
 
@@ -253,10 +258,10 @@ fn main() -> penrose::Result<()> {
     )?;
 
     // Default number of clients in the main layout area
-    let n_main = 1;
+    let clients_in_main = 1;
 
     // Default percentage of the screen to fill with the main area of the layout
-    let ratio = 0.6;
+    let main_to_min_ratio = 0.6;
 
     let mut config_builder = Config::default().builder();
     let config = config_builder
@@ -268,11 +273,23 @@ fn main() -> penrose::Result<()> {
         // Layouts to be used on each workspace. Currently all workspaces have the same set of Layouts
         // available to them, though they track modifications to n_main and ratio independently.
         .layouts(vec![
-            Layout::new("[side]", LayoutConf::default(), side_stack, n_main, ratio),
-            Layout::new("[botm]", LayoutConf::default(), bottom_stack, n_main, ratio),
+            Layout::new(
+                "[side]",
+                LayoutConf::default(),
+                side_stack,
+                clients_in_main,
+                main_to_min_ratio,
+            ),
+            Layout::new(
+                "[botm]",
+                LayoutConf::default(),
+                bottom_stack,
+                clients_in_main,
+                main_to_min_ratio,
+            ),
         ])
         .bar_height(BAR_HEIGHT as u32)
-        .gap_px(5)
+        .gap_px(8)
         .build()
         .unwrap();
 
@@ -282,6 +299,7 @@ fn main() -> penrose::Result<()> {
         LayoutSymbolAsRootName::new(),
         scratch_pad.get_hook(),
         Box::new(bar),
+        NewWindowHook::new(),
     ];
 
     let mut keys = BetterKeyBindings::new();
@@ -321,11 +339,51 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
-    // Only temporary untill I understand this more.
-    // Spamming this a few times allows me to focus popups.
     keys.add("super tab", |wm| {
-        wm.cycle_client(Direction::Forward)?;
         wm.drag_client(Direction::Forward)?;
+        Ok(())
+    });
+
+    fn cycle_client_screen(
+        wm: &mut WindowManager<XcbConnection>,
+        direction: Direction,
+    ) -> penrose::Result<()> {
+        let focused_index = match wm.focused_client_id() {
+            Some(id) => id,
+            None => return Ok(()),
+        };
+
+        let current_screen = wm.active_screen_index();
+
+        match direction {
+            Direction::Forward => {
+                if current_screen == wm.n_screens() - 1 {
+                    wm.client_to_screen(&Selector::Index(0))?;
+                } else {
+                    wm.client_to_screen(&Selector::Index(current_screen + 1))?;
+                }
+            }
+            Direction::Backward => {
+                if current_screen == 0 {
+                    wm.client_to_screen(&Selector::Index(wm.n_screens() - 1))?;
+                } else {
+                    wm.client_to_screen(&Selector::Index(current_screen - 1))?;
+                }
+            }
+        }
+
+        wm.focus_client(&Selector::WinId(focused_index))?;
+
+        Ok(())
+    }
+
+    keys.add("super shift left", |wm| {
+        cycle_client_screen(wm, Direction::Backward)?;
+        Ok(())
+    });
+
+    keys.add("super shift right", |wm| {
+        cycle_client_screen(wm, Direction::Forward)?;
         Ok(())
     });
 
@@ -367,7 +425,14 @@ fn main() -> penrose::Result<()> {
     );
     wm.init()?;
 
-    wm.grab_keys_and_run(keys.into_penrose_bindings(), HashMap::new())?;
+    let mouse_bindings = HashMap::new();
+
+    // mouse_bindings.insert(
+    //     MouseEventKind::Motion,
+    //     MouseState::new(MouseButton::)
+    // );
+
+    wm.grab_keys_and_run(keys.into_penrose_bindings(), mouse_bindings)?;
 
     Ok(())
 }
