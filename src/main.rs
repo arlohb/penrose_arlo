@@ -168,6 +168,8 @@ fn main() -> penrose::Result<()> {
     setup_logger();
     std::thread::spawn(async_setup);
 
+    let mut clipboard = arboard::Clipboard::new().unwrap();
+
     // let (command_sender, command_listener) = CommandListener::new();
     // command_sender.send(Message::new("Hello thread!!")).unwrap();
 
@@ -411,6 +413,24 @@ fn main() -> penrose::Result<()> {
 
     keys.add("XF86AudioMute", |_wm| {
         spawn("amixer set Master toggle")?;
+        Ok(())
+    });
+
+    keys.add("super C", move |wm| {
+        let client_id = match wm.focused_client_id() {
+            Some(id) => id,
+            None => return Ok(()),
+        };
+
+        let client = match wm.client(&Selector::WinId(client_id)) {
+            Some(client) => client,
+            None => return Ok(()),
+        };
+
+        let class = client.wm_class();
+
+        let _ = clipboard.set_text(class.to_string());
+
         Ok(())
     });
 
