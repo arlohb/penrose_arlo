@@ -387,6 +387,16 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
+    keys.add("super right", |wm| {
+        wm.cycle_client(Direction::Forward)?;
+        Ok(())
+    });
+
+    keys.add("super left", |wm| {
+        wm.cycle_client(Direction::Backward)?;
+        Ok(())
+    });
+
     // Used `xev` to find the names for these
 
     keys.add("XF86AudioRaiseVolume", |_wm| {
