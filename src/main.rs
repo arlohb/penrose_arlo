@@ -1,6 +1,4 @@
-mod command_listener;
 mod key_bindings;
-use command_listener::{CommandListener, Message};
 pub use key_bindings::*;
 mod new_window_hook;
 pub use new_window_hook::*;
@@ -27,7 +25,6 @@ fn setup_logger() {
 use penrose::{
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
     core::{
-        bindings::{MouseButton, MouseEventKind, MouseState},
         config::Config,
         helpers::spawn,
         layout::{bottom_stack, side_stack, Layout, LayoutConf},
@@ -35,11 +32,9 @@ use penrose::{
         ring::Direction,
     },
     draw::*,
-    gen_mousebindings,
     xcb::{XcbConnection, XcbDraw, XcbDrawContext, XcbHooks},
     Selector,
 };
-use playerctl::PlayerCtl;
 
 use std::{collections::HashMap, path::Path, process::Command};
 
@@ -119,21 +114,21 @@ impl Widget for ReactiveText {
         ctx: &mut dyn DrawContext,
         _screen: usize,
         _screen_has_focus: bool,
-        _w: f64,
-        _h: f64,
+        w: f64,
+        h: f64,
     ) -> Result<()> {
         ctx.font(&self.text_style.font, self.text_style.point_size)?;
         ctx.color(&self.text_style.fg);
 
         let text = (self.text)();
 
-        // let extent = self.current_extent(ctx, h)?;
+        let extent = self.current_extent(ctx, h)?;
 
-        // ctx.set_x_offset(match self.align {
-        //     Align::Left => 0.,
-        //     Align::Center => (w - extent.0) / 2.,
-        //     Align::Right => w - extent.0,
-        // });
+        ctx.set_x_offset(match self.align {
+            Align::Left => 0.,
+            Align::Center => (w - extent.0) / 2.,
+            Align::Right => w - extent.0,
+        });
 
         ctx.text(&text, 1., self.text_style.padding)?;
 
@@ -157,8 +152,7 @@ impl Widget for ReactiveText {
     }
 
     fn require_draw(&self) -> bool {
-        // self.last_updated.elapsed() > self.update_interval
-        false
+        self.last_updated.elapsed() > self.update_interval
     }
 
     fn is_greedy(&self) -> bool {
@@ -171,33 +165,6 @@ fn main() -> penrose::Result<()> {
     std::thread::spawn(async_setup);
 
     let mut clipboard = arboard::Clipboard::new().unwrap();
-
-    // let (command_sender, command_listener) = CommandListener::new();
-    // command_sender.send(Message::new("Hello thread!!")).unwrap();
-
-    // std::thread::spawn(move || {
-    //     command_listener.listen();
-    // });
-
-    std::thread::spawn(|| loop {
-        let child = std::process::Command::new("/bin/ls")
-            // .arg("-c")
-            // .arg("ls")
-            .stdout(std::process::Stdio::piped())
-            .spawn()
-            .unwrap();
-
-        match child.wait_with_output() {
-            Ok(output) => {
-                let stdout = String::from_utf8(output.stdout).unwrap();
-                tracing::info!("{}", stdout);
-            }
-            Err(e) => {
-                tracing::error!("{:?}", e);
-            }
-        }
-        std::thread::sleep(std::time::Duration::from_secs(1));
-    });
 
     let text_style = TextStyle {
         font: FIRA.to_string(),
@@ -214,48 +181,22 @@ fn main() -> penrose::Result<()> {
         Dracula::BG,
         &[FIRA],
         vec![
-            // ReactiveText::new(
-            //     || PlayerCtl::metadata().title,
-            //     text_style.clone(),
-            //     Align::Right,
-            //     std::time::Duration::from_secs(5),
-            // ),
-            // ReactiveText::new(
-            //     || "Left".to_string(),
-            //     text_style.clone(),
-            //     Align::Left,
-            //     std::time::Duration::from_secs(5),
-            // ),
-            // ReactiveText::new(
-            //     || "Center".to_string(),
-            //     text_style.clone(),
-            //     Align::Center,
-            //     std::time::Duration::from_secs(5),
-            // ),
-            // ReactiveText::new(
-            //     || "Right".to_string(),
-            //     text_style.clone(),
-            //     Align::Right,
-            //     std::time::Duration::from_secs(5),
-            // ),
             ReactiveText::new(
-                || {
-                    // let child = std::process::Command::new("bash")
-                    //     .arg("-c")
-                    //     .arg("ls")
-                    //     .stdout(std::process::Stdio::piped())
-                    //     .spawn()
-                    //     .unwrap();
-
-                    // let stdout = child.wait_with_output().unwrap().stdout;
-                    // let output = String::from_utf8(stdout).unwrap();
-
-                    // tracing::info!("ls: {}", output);
-                    // tracing::info!("{}", PlayerCtl::metadata().artist.is_empty());
-                    "Hello".to_string()
-                },
-                text_style,
+                || "Left".to_string(),
+                text_style.clone(),
                 Align::Left,
+                std::time::Duration::from_secs(5),
+            ),
+            ReactiveText::new(
+                || "Center".to_string(),
+                text_style.clone(),
+                Align::Center,
+                std::time::Duration::from_secs(5),
+            ),
+            ReactiveText::new(
+                || "Right".to_string(),
+                text_style,
+                Align::Right,
                 std::time::Duration::from_secs(5),
             ),
         ],
@@ -435,19 +376,6 @@ fn main() -> penrose::Result<()> {
 
         Ok(())
     });
-
-    // for i in 0..20 {
-    //     let child = std::process::Command::new("bash")
-    //         .arg("-c")
-    //         .arg("ls")
-    //         .stdout(std::process::Stdio::piped())
-    //         .spawn()
-    //         .unwrap();
-
-    //     let stdout = child.wait_with_output().unwrap().stdout;
-    //     let output = String::from_utf8(stdout).unwrap();
-    //     tracing::info!("{i}: {output}");
-    // }
 
     let mut wm = WindowManager::new(
         config,

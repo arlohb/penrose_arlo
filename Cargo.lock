@@ -677,7 +677,6 @@ dependencies = [
  "arboard",
  "lazy_static",
  "penrose",
- "playerctl",
  "simplelog",
  "tracing",
  "xcb 1.1.1",
@@ -724,12 +723,6 @@ name = "pkg-config"
 version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
-
-[[package]]
-name = "playerctl"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46e64d4850dfbd759aa3f4e303674ee3f697b9548ab60dc0e2571dc43568a7c7"
 
 [[package]]
 name = "png"
