@@ -9,6 +9,8 @@ mod reactive_text;
 pub use reactive_text::*;
 mod setup;
 pub use setup::*;
+mod wm_ext;
+pub use wm_ext::*;
 
 use penrose::{
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
@@ -204,46 +206,13 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
-    fn cycle_client_screen(
-        wm: &mut WindowManager<XcbConnection>,
-        direction: Direction,
-    ) -> penrose::Result<()> {
-        let focused_index = match wm.focused_client_id() {
-            Some(id) => id,
-            None => return Ok(()),
-        };
-
-        let current_screen = wm.active_screen_index();
-
-        match direction {
-            Direction::Forward => {
-                if current_screen == wm.n_screens() - 1 {
-                    wm.client_to_screen(&Selector::Index(0))?;
-                } else {
-                    wm.client_to_screen(&Selector::Index(current_screen + 1))?;
-                }
-            }
-            Direction::Backward => {
-                if current_screen == 0 {
-                    wm.client_to_screen(&Selector::Index(wm.n_screens() - 1))?;
-                } else {
-                    wm.client_to_screen(&Selector::Index(current_screen - 1))?;
-                }
-            }
-        }
-
-        wm.focus_client(&Selector::WinId(focused_index))?;
-
-        Ok(())
-    }
-
     keys.add("super shift left", |wm| {
-        cycle_client_screen(wm, Direction::Backward)?;
+        wm.cycle_client_to_screen(Direction::Backward)?;
         Ok(())
     });
 
     keys.add("super shift right", |wm| {
-        cycle_client_screen(wm, Direction::Forward)?;
+        wm.cycle_client_to_screen(Direction::Forward)?;
         Ok(())
     });
 
