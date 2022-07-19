@@ -7,25 +7,8 @@ mod new_window_hook;
 pub use new_window_hook::*;
 mod reactive_text;
 pub use reactive_text::*;
-
-fn home() -> String {
-    std::env::var("HOME").unwrap()
-}
-
-fn setup_logger() {
-    let log_file = format!("{}/.penrose.log", home());
-
-    simplelog::WriteLogger::init(
-        simplelog::LevelFilter::Info,
-        simplelog::Config::default(),
-        std::fs::File::create(log_file).unwrap(),
-    )
-    .unwrap();
-
-    std::panic::set_hook(Box::new(|info| {
-        tracing::error!("{}", info);
-    }));
-}
+mod setup;
+pub use setup::*;
 
 use penrose::{
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
@@ -41,22 +24,7 @@ use penrose::{
     Selector,
 };
 
-use std::{collections::HashMap, path::Path, process::Command};
-
-fn async_setup() {
-    let screens_script = format!("{}/penrose_arlo/screens.sh", home());
-
-    if Path::new(&screens_script).exists() {
-        let _: std::io::Result<()> = (|| {
-            Command::new("bash").arg(screens_script).spawn()?.wait()?;
-            Ok(())
-        })();
-    };
-
-    let _ = spawn("nitrogen --restore");
-
-    let _ = spawn("picom --experimental-backends");
-}
+use std::collections::HashMap;
 
 const BAR_HEIGHT: usize = 22;
 
