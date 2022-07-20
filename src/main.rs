@@ -11,6 +11,8 @@ mod setup;
 pub use setup::*;
 mod wm_ext;
 pub use wm_ext::*;
+mod player;
+pub use player::*;
 
 use penrose::{
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
@@ -84,31 +86,32 @@ fn main() -> penrose::Result<()> {
                 std::time::Duration::from_secs(5),
             ));
 
-            let player_finder = mpris::PlayerFinder::new().unwrap();
-
             widgets.push(ReactiveText::new(
-                move || {
-                    let player = player_finder.find_active().ok()?;
-                    let metadata = player.get_metadata().ok()?;
+                || {
+                    with_player(|player| {
+                        let metadata = player.get_metadata().ok()?;
 
-                    let title = match metadata.title() {
-                        Some(title) if title.is_empty() => None,
-                        Some(title) => Some(title.to_string()),
-                        None => None,
-                    };
+                        let title = match metadata.title() {
+                            Some(title) if title.is_empty() => None,
+                            Some(title) => Some(title.to_string()),
+                            None => None,
+                        };
 
-                    let artists = match metadata.artists() {
-                        Some(artists) if artists.is_empty() => None,
-                        Some(artists) => Some(artists.join(", ")),
-                        None => None,
-                    };
+                        let artists = match metadata.artists() {
+                            Some(artists) if artists.is_empty() => None,
+                            Some(artists) => Some(artists.join(", ")),
+                            None => None,
+                        };
 
-                    match (title, artists) {
-                        (Some(title), Some(artists)) => Some(format!("{} - {}", title, artists)),
-                        (Some(title), None) => Some(title),
-                        (None, Some(artists)) => Some(artists),
-                        _ => None,
-                    }
+                        match (title, artists) {
+                            (Some(title), Some(artists)) => {
+                                Some(format!("{} - {}", title, artists))
+                            }
+                            (Some(title), None) => Some(title),
+                            (None, Some(artists)) => Some(artists),
+                            _ => None,
+                        }
+                    })
                 },
                 text_style,
                 Align::Right,
@@ -240,6 +243,26 @@ fn main() -> penrose::Result<()> {
 
     keys.add("XF86AudioMute", |_wm| {
         spawn("amixer set Master toggle")?;
+        Ok(())
+    });
+
+    keys.add("XF86AudioPlay", |_wm| {
+        let _ = with_player(|player| player.play_pause().ok());
+        Ok(())
+    });
+
+    keys.add("XF86AudioStop", |_wm| {
+        let _ = with_player(|player| player.stop().ok());
+        Ok(())
+    });
+
+    keys.add("XF86AudioNext", |_wm| {
+        let _ = with_player(|player| player.next().ok());
+        Ok(())
+    });
+
+    keys.add("XF86AudioPrev", |_wm| {
+        let _ = with_player(|player| player.previous().ok());
         Ok(())
     });
 
