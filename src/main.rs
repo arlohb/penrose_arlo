@@ -132,7 +132,8 @@ fn main() -> penrose::Result<()> {
     let config = config_builder
         .workspaces(vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"])
         // Windows with a matching WM_CLASS will always float
-        .floating_classes(vec!["gnome-screenshot"])
+        // java = minecraft?
+        .floating_classes(vec!["gnome-screenshot", "java"])
         .focused_border(Color::new_from_hex(Dracula::PURPLE).as_rgb_hex_string())?
         .unfocused_border(Color::new_from_hex(Dracula::BG).as_rgb_hex_string())?
         // Layouts to be used on each workspace. Currently all workspaces have the same set of Layouts
