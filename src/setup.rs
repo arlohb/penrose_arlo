@@ -34,4 +34,6 @@ pub fn async_setup() {
     let _ = spawn("nitrogen --restore");
 
     let _ = spawn("picom --experimental-backends");
+
+    let _ = spawn("setxkbmap -option caps:escape");
 }
