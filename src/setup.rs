@@ -1,6 +1,6 @@
 use std::{path::Path, process::Command};
 
-use penrose::core::helpers::spawn;
+use penrose::common::helpers::spawn;
 
 #[must_use]
 pub fn home() -> String {

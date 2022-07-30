@@ -1,7 +1,4 @@
-use penrose::{
-    core::{data_types::Point, xconnection::XConn, Hook},
-    Selector,
-};
+use penrose::{common::geometry::Point, core::Hook, xconnection::XConn, Selector};
 
 use lazy_static::lazy_static;
 

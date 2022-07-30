@@ -24,18 +24,18 @@ mod colours;
 pub use colours::*;
 
 use penrose::{
+    common::helpers::spawn,
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
     core::{
         config::Config,
-        helpers::spawn,
         layout::{bottom_stack, side_stack, Layout, LayoutConf},
         manager::WindowManager,
         ring::Direction,
     },
     draw::{Color, Draw, DrawContext, HookableWidget, StatusBar, TextStyle},
     xcb::{XcbConnection, XcbDraw, XcbHooks},
+    xconnection::XConn,
     Selector,
-    __test_helpers::XConn,
 };
 
 use std::collections::HashMap;

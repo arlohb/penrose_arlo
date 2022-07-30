@@ -1,6 +1,6 @@
 use penrose::{
-    __test_helpers::Region,
-    draw::{DrawContext, DrawError, TextStyle, Widget},
+    common::geometry::Region,
+    draw::{DrawContext, TextStyle, Widget},
 };
 
 pub enum Align {
@@ -41,7 +41,11 @@ impl ReactiveText {
         (self.text)().unwrap_or_else(|| "".to_string())
     }
 
-    fn calc_extent(&mut self, ctx: &mut dyn DrawContext, _h: f64) -> Result<(f64, f64), DrawError> {
+    fn calc_extent(
+        &mut self,
+        ctx: &mut dyn DrawContext,
+        _h: f64,
+    ) -> Result<(f64, f64), penrose::draw::Error> {
         let (l, r) = self.text_style.padding;
 
         ctx.font(&self.text_style.font, self.text_style.point_size)?;
@@ -55,7 +59,7 @@ impl ReactiveText {
 
 impl<X> penrose::core::Hook<X> for ReactiveText
 where
-    X: penrose::core::xconnection::XConn,
+    X: penrose::xconnection::XConn,
 {
     fn screens_updated(
         &mut self,
@@ -75,9 +79,9 @@ impl Widget for ReactiveText {
         _screen_has_focus: bool,
         _w: f64,
         h: f64,
-    ) -> Result<(), DrawError> {
+    ) -> Result<(), penrose::draw::Error> {
         let screen_dimensions = self.screen_dimensions.as_ref().ok_or_else(|| {
-            DrawError::Raw("Screen dimensions haven't been calculated yet".to_owned())
+            penrose::draw::Error::Raw("Screen dimensions haven't been calculated yet".to_owned())
         })?;
         let screen_size = screen_dimensions[screen];
 
@@ -108,7 +112,7 @@ impl Widget for ReactiveText {
         &mut self,
         ctx: &mut dyn DrawContext,
         h: f64,
-    ) -> Result<(f64, f64), DrawError> {
+    ) -> Result<(f64, f64), penrose::draw::Error> {
         match self.extent {
             Some(extent) => Ok(extent),
             None => {

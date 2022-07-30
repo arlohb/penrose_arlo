@@ -1,4 +1,4 @@
-use penrose::{core::ring::Direction, core::xconnection::XConn, Selector, WindowManager};
+use penrose::{core::ring::Direction, xconnection::XConn, Selector, WindowManager};
 
 pub trait WindowManagerExt {
     /// Moves the focused window to the next screen in the given direction.

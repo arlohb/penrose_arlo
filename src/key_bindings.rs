@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use penrose::{
-    WindowManager,
-    __test_helpers::{KeyCode, XConn},
-};
+use penrose::{common::bindings::KeyCode, xconnection::XConn, WindowManager};
 
 pub struct KeyMod;
 
@@ -33,7 +30,7 @@ impl<X: XConn + 'static> BetterKeyBindings<X> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            codes: penrose::core::helpers::keycodes_from_xmodmap()
+            codes: penrose::common::helpers::keycodes_from_xmodmap()
                 .into_iter()
                 .map(|(string, code)| (string.to_lowercase(), code))
                 .collect::<KnownCodes>(),
