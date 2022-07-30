@@ -200,7 +200,7 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
-    keys.add("super b", |_wm| {
+    keys.add("super B", |_wm| {
         spawn("google-chrome")?;
         Ok(())
     });
@@ -210,22 +210,22 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
-    keys.add("super shift left", |wm| {
+    keys.add("super shift J", |wm| {
         wm.cycle_client_to_screen(Direction::Backward)?;
         Ok(())
     });
 
-    keys.add("super shift right", |wm| {
+    keys.add("super shift semicolon", |wm| {
         wm.cycle_client_to_screen(Direction::Forward)?;
         Ok(())
     });
 
-    keys.add("super right", |wm| {
+    keys.add("super semicolon", |wm| {
         wm.cycle_client(Direction::Forward)?;
         Ok(())
     });
 
-    keys.add("super left", |wm| {
+    keys.add("super J", |wm| {
         wm.cycle_client(Direction::Backward)?;
         Ok(())
     });
