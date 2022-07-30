@@ -1,6 +1,10 @@
 use penrose::{core::ring::Direction, core::xconnection::XConn, Selector, WindowManager};
 
 pub trait WindowManagerExt {
+    /// Moves the focused window to the next screen in the given direction.
+    ///
+    /// # Errors
+    /// Errors if an inner penrose command fails.
     fn cycle_client_to_screen(&mut self, direction: Direction) -> penrose::Result<()>;
 }
 

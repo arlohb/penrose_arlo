@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use penrose::{WindowManager, XcbConnection, __test_helpers::KeyCode};
+use penrose::{
+    WindowManager,
+    __test_helpers::{KeyCode, XConn},
+};
 
 pub struct KeyMod;
 
@@ -12,21 +15,22 @@ impl KeyMod {
     pub const CTRL: u16 = 4;
 }
 
-pub type BindingFn = dyn FnMut(&mut WindowManager<XcbConnection>) -> penrose::Result<()>;
+pub type BindingFn<X> = dyn FnMut(&mut WindowManager<X>) -> penrose::Result<()>;
 pub type KnownCodes = HashMap<String, u8>;
 
-pub struct BetterKeyBindings {
+pub struct BetterKeyBindings<X: XConn + 'static> {
     codes: KnownCodes,
-    bindings: HashMap<&'static str, Box<BindingFn>>,
+    bindings: HashMap<&'static str, Box<BindingFn<X>>>,
 }
 
-impl Default for BetterKeyBindings {
+impl<X: XConn + 'static> Default for BetterKeyBindings<X> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl BetterKeyBindings {
+impl<X: XConn + 'static> BetterKeyBindings<X> {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             codes: penrose::core::helpers::keycodes_from_xmodmap()
@@ -65,19 +69,20 @@ impl BetterKeyBindings {
     pub fn add(
         &mut self,
         key: &'static str,
-        func: impl FnMut(&mut WindowManager<XcbConnection>) -> penrose::Result<()> + 'static,
+        func: impl FnMut(&mut WindowManager<X>) -> penrose::Result<()> + 'static,
     ) {
         self.bindings.insert(key, Box::new(func));
     }
 
-    pub fn into_penrose_bindings(self) -> HashMap<KeyCode, Box<BindingFn>> {
+    #[must_use]
+    pub fn into_penrose_bindings(self) -> HashMap<KeyCode, Box<BindingFn<X>>> {
         self.bindings
             .into_iter()
             .map(|(key_str, mut func)| {
                 let key = Self::key_parse(&self.codes, key_str);
 
-                let penrose_fn: Box<BindingFn> =
-                    Box::new(move |wm: &mut WindowManager<XcbConnection>| func(wm));
+                let penrose_fn: Box<BindingFn<X>> =
+                    Box::new(move |wm: &mut WindowManager<X>| func(wm));
 
                 (key, penrose_fn)
             })

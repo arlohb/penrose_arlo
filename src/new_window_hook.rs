@@ -16,7 +16,7 @@ lazy_static! {
         let (conn, screen_num) = xcb::Connection::connect(None).unwrap();
 
         let setup = conn.get_setup();
-        let screen = setup.roots().nth(screen_num as usize).unwrap();
+        let screen = setup.roots().nth(screen_num.try_into().expect("X screen number was negative")).unwrap();
 
         let root = screen.root();
 
@@ -32,12 +32,22 @@ fn mouse_position() -> Point {
 
     let reply: xcb::x::QueryPointerReply = X_DATA.conn.wait_for_reply(cookie).unwrap();
 
-    Point::new(reply.root_x() as u32, reply.root_y() as u32)
+    Point::new(
+        reply
+            .root_x()
+            .try_into()
+            .expect("Mouse position was negative"),
+        reply
+            .root_y()
+            .try_into()
+            .expect("Mouse position was negative"),
+    )
 }
 
 pub struct NewWindowHook {}
 
 impl NewWindowHook {
+    #[must_use]
     pub fn new() -> Box<Self> {
         Box::new(Self {})
     }

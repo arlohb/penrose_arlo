@@ -93,8 +93,8 @@ impl Widget for ReactiveText {
 
         ctx.set_x_offset(match self.align {
             Align::Left => 0.,
-            Align::Center => (screen_size.w as f64 - extent.0) / 2.,
-            Align::Right => screen_size.w as f64 - extent.0,
+            Align::Center => (f64::from(screen_size.w) - extent.0) / 2.,
+            Align::Right => f64::from(screen_size.w) - extent.0,
         });
 
         ctx.text(&text, 1., self.text_style.padding)?;
@@ -107,12 +107,12 @@ impl Widget for ReactiveText {
     fn current_extent(
         &mut self,
         ctx: &mut dyn DrawContext,
-        _h: f64,
+        h: f64,
     ) -> Result<(f64, f64), DrawError> {
         match self.extent {
             Some(extent) => Ok(extent),
             None => {
-                let extent = self.calc_extent(ctx, _h)?;
+                let extent = self.calc_extent(ctx, h)?;
                 self.extent = Some(extent);
                 Ok(extent)
             }

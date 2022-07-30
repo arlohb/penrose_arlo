@@ -1,5 +1,12 @@
-// The vec! macro often breaks autocomplete.
-#![allow(clippy::vec_init_then_push)]
+#![warn(clippy::pedantic, clippy::nursery)]
+#![allow(
+    // The vec! macro often breaks autocomplete.
+    clippy::vec_init_then_push,
+    // Is annoying.
+    clippy::module_name_repetitions,
+    // False(?) position when ignoring a result.
+    clippy::let_underscore_drop,
+)]
 
 mod key_bindings;
 pub use key_bindings::*;
@@ -13,6 +20,8 @@ mod wm_ext;
 pub use wm_ext::*;
 mod player;
 pub use player::*;
+mod colours;
+pub use colours::*;
 
 use penrose::{
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
@@ -23,9 +32,10 @@ use penrose::{
         manager::WindowManager,
         ring::Direction,
     },
-    draw::*,
-    xcb::{XcbConnection, XcbDraw, XcbDrawContext, XcbHooks},
+    draw::{Color, Draw, DrawContext, HookableWidget, StatusBar, TextStyle},
+    xcb::{XcbConnection, XcbDraw, XcbHooks},
     Selector,
+    __test_helpers::XConn,
 };
 
 use std::collections::HashMap;
@@ -34,28 +44,9 @@ const BAR_HEIGHT: usize = 22;
 
 const FIRA: &str = "FiraCode Nerd Font";
 
-pub struct Dracula;
-impl Dracula {
-    pub const BG: u32 = 0x282a36ff;
-    pub const CURRENT_LINE: u32 = 0x44475aff;
-    pub const SELECTION: u32 = 0x44475aff;
-    pub const FG: u32 = 0xf8f8f2ff;
-    pub const COMMENT: u32 = 0x6272a4ff;
-    pub const CYAN: u32 = 0x8be9fdff;
-    pub const GREEN: u32 = 0x50fa7bff;
-    pub const ORANGE: u32 = 0xffb86cff;
-    pub const PINK: u32 = 0xff79c6ff;
-    pub const PURPLE: u32 = 0xbd93f9ff;
-    pub const RED: u32 = 0xff5555ff;
-    pub const YELLOW: u32 = 0xf1fa8cff;
-}
-
-fn main() -> penrose::Result<()> {
-    setup_logger();
-    std::thread::spawn(async_setup);
-
-    let mut clipboard = arboard::Clipboard::new().unwrap();
-
+fn create_bar<C: DrawContext, D: Draw<Ctx = C>, X: XConn>(
+    draw: D,
+) -> penrose::Result<StatusBar<C, D, X>> {
     let text_style = TextStyle {
         font: FIRA.to_string(),
         point_size: 12,
@@ -64,14 +55,14 @@ fn main() -> penrose::Result<()> {
         padding: (3., 3.),
     };
 
-    let bar = StatusBar::<XcbDrawContext, XcbDraw, XcbConnection>::try_new(
-        XcbDraw::new()?,
+    Ok(StatusBar::<C, D, X>::try_new(
+        draw,
         penrose::draw::Position::Top,
         BAR_HEIGHT,
         Dracula::BG,
         &[FIRA],
         {
-            let mut widgets: Vec<Box<dyn HookableWidget<XcbConnection>>> = Vec::new();
+            let mut widgets: Vec<Box<dyn HookableWidget<X>>> = Vec::new();
 
             widgets.push(ReactiveText::new(
                 || Some("Left".to_string()),
@@ -120,7 +111,17 @@ fn main() -> penrose::Result<()> {
 
             widgets
         },
-    )?;
+    )?)
+}
+
+#[allow(clippy::too_many_lines)]
+fn main() -> penrose::Result<()> {
+    setup_logger();
+    std::thread::spawn(async_setup);
+
+    let mut clipboard = arboard::Clipboard::new().unwrap();
+
+    let bar = create_bar(XcbDraw::new()?)?;
 
     // Default number of clients in the main layout area
     let clients_in_main = 1;
@@ -154,7 +155,11 @@ fn main() -> penrose::Result<()> {
                 main_to_min_ratio,
             ),
         ])
-        .bar_height(BAR_HEIGHT as u32)
+        .bar_height(
+            BAR_HEIGHT
+                .try_into()
+                .expect("Bar height doesn't fit into a u32"),
+        )
         .gap_px(8)
         .build()
         .unwrap();
@@ -195,8 +200,8 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
-    keys.add("super slash", move |_wm| {
-        (scratch_pad.toggle())(_wm)?;
+    keys.add("super slash", move |wm| {
+        (scratch_pad.toggle())(wm)?;
         Ok(())
     });
 
