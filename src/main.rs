@@ -257,6 +257,11 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
+    keys.add("super P", |_wm| {
+        let _ = with_player(|player| player.play_pause().ok());
+        Ok(())
+    });
+
     keys.add("XF86AudioStop", |_wm| {
         let _ = with_player(|player| player.stop().ok());
         Ok(())
