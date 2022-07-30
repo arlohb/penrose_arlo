@@ -32,7 +32,7 @@ use std::collections::HashMap;
 
 const BAR_HEIGHT: usize = 22;
 
-const FIRA: &str = "Fira Code";
+const FIRA: &str = "FiraCode Nerd Font";
 
 pub struct Dracula;
 impl Dracula {
