@@ -22,6 +22,8 @@ mod player;
 pub use player::*;
 mod colours;
 pub use colours::*;
+mod x_data;
+pub use x_data::*;
 
 use penrose::{
     common::helpers::spawn,
@@ -65,16 +67,16 @@ fn create_bar<C: DrawContext, D: Draw<Ctx = C>, X: XConn>(
             let mut widgets: Vec<Box<dyn HookableWidget<X>>> = Vec::new();
 
             widgets.push(ReactiveText::new(
-                || Some("Left".to_string()),
+                || {
+                    use chrono::prelude::*;
+
+                    let now = Local::now();
+
+                    Some(now.format("%e %h %Y - %k:%M:%S").to_string())
+                },
                 text_style.clone(),
                 Align::Left,
-                std::time::Duration::from_secs(5),
-            ));
-            widgets.push(ReactiveText::new(
-                || Some("Center".to_string()),
-                text_style.clone(),
-                Align::Center,
-                std::time::Duration::from_secs(5),
+                std::time::Duration::from_secs(1),
             ));
 
             widgets.push(ReactiveText::new(
@@ -104,6 +106,13 @@ fn create_bar<C: DrawContext, D: Draw<Ctx = C>, X: XConn>(
                         }
                     })
                 },
+                text_style.clone(),
+                Align::Center,
+                std::time::Duration::from_secs(5),
+            ));
+
+            widgets.push(ReactiveText::new(
+                || Some(" ".to_string()),
                 text_style,
                 Align::Right,
                 std::time::Duration::from_secs(5),
