@@ -44,7 +44,7 @@ use penrose::{
         manager::WindowManager,
         ring::Direction,
     },
-    draw::{Color, Draw, TextStyle},
+    draw::Color,
     xcb::{XcbConnection, XcbDraw, XcbHooks},
     Selector,
 };
@@ -55,66 +55,6 @@ const BAR_HEIGHT: usize = 22;
 
 const FIRA: &str = "FiraCode Nerd Font";
 
-fn create_bar<D: Draw>(draw: D) -> penrose::Result<StatusBar<D>> {
-    let text_style = TextStyle {
-        font: FIRA.to_string(),
-        point_size: 12,
-        fg: Dracula::FG.into(),
-        bg: None,
-        padding: (3., 3.),
-    };
-
-    StatusBar::<D>::try_new(
-        draw,
-        penrose::draw::Position::Top,
-        BAR_HEIGHT,
-        Dracula::BG,
-        &[FIRA],
-        StatusBarWidgets {
-            left: vec![widgets::Text::new(
-                || {
-                    use chrono::prelude::*;
-
-                    let now = Local::now();
-
-                    Some(now.format("%e %h %Y - %k:%M:%S").to_string())
-                },
-                text_style.clone(),
-            )],
-            center: Some(widgets::Text::new(
-                || {
-                    with_player(|player| {
-                        let metadata = player.get_metadata().ok()?;
-
-                        let title = match metadata.title() {
-                            Some(title) if title.is_empty() => None,
-                            Some(title) => Some(title.to_string()),
-                            None => None,
-                        };
-
-                        let artists = match metadata.artists() {
-                            Some(artists) if artists.is_empty() => None,
-                            Some(artists) => Some(artists.join(", ")),
-                            None => None,
-                        };
-
-                        match (title, artists) {
-                            (Some(title), Some(artists)) => {
-                                Some(format!("{} - {}", title, artists))
-                            }
-                            (Some(title), None) => Some(title),
-                            (None, Some(artists)) => Some(artists),
-                            _ => None,
-                        }
-                    })
-                },
-                text_style.clone(),
-            )),
-            right: vec![widgets::Text::new(|| Some(" ".to_string()), text_style)],
-        },
-    )
-}
-
 #[allow(clippy::too_many_lines)]
 fn main() -> penrose::Result<()> {
     setup_logger();
@@ -122,22 +62,10 @@ fn main() -> penrose::Result<()> {
 
     let mut clipboard = arboard::Clipboard::new().unwrap();
 
-    let mut bar: StatusBar<XcbDraw> = create_bar(XcbDraw::new()?)?;
+    let bar: StatusBar<XcbDraw> = StatusBar::default();
     let bar_hook = bar.create_hook();
 
-    std::thread::spawn(move || {
-        let mut timer = std::time::Instant::now();
-
-        loop {
-            bar.poll_events()
-                .expect("Penrose error while polling events");
-
-            if timer.elapsed() > std::time::Duration::from_secs(1) {
-                timer = std::time::Instant::now();
-                bar.redraw().expect("Failed to redraw bar");
-            }
-        }
-    });
+    bar.spawn_thread();
 
     // Default number of clients in the main layout area
     let clients_in_main = 1;

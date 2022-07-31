@@ -1,15 +1,47 @@
 use penrose::{
     common::geometry::Region,
     core::Hook,
-    draw::{Color, Draw, DrawContext, Position},
+    draw::{Color, Draw, DrawContext, Position, TextStyle},
+    xcb::XcbDraw,
     xconnection::{Atom, Prop, WinType, XConn},
     WindowManager, Xid,
 };
 
-use crate::{Align, BarWidget};
+use crate::{widgets, with_player, Align, BarWidget, Dracula, BAR_HEIGHT, FIRA};
 
 pub type Sender = std::sync::mpsc::Sender<StatusBarEvent>;
 pub type Receiver = std::sync::mpsc::Receiver<StatusBarEvent>;
+
+pub enum StatusBarEvent {
+    Startup,
+    ScreensUpdated,
+}
+
+pub struct StatusBarHook {
+    sender: Sender,
+}
+
+impl<X: XConn> Hook<X> for StatusBarHook {
+    fn startup(&mut self, _wm: &mut WindowManager<X>) -> penrose::Result<()> {
+        self.sender
+            .send(StatusBarEvent::Startup)
+            .expect("Failed to send event");
+
+        Ok(())
+    }
+
+    fn screens_updated(
+        &mut self,
+        _wm: &mut WindowManager<X>,
+        _dimensions: &[Region],
+    ) -> penrose::Result<()> {
+        self.sender
+            .send(StatusBarEvent::ScreensUpdated)
+            .expect("Failed to send event");
+
+        Ok(())
+    }
+}
 
 pub struct StatusBarWidgets {
     pub left: Vec<Box<dyn BarWidget>>,
@@ -36,7 +68,7 @@ pub struct StatusBar<D: Draw> {
 unsafe impl<D: Draw> Send for StatusBar<D> {}
 unsafe impl<D: Draw> Sync for StatusBar<D> {}
 
-impl<D: Draw> StatusBar<D> {
+impl<D: Draw + 'static> StatusBar<D> {
     /// Try to initialise a new empty status bar.
     ///
     /// # Errors
@@ -167,35 +199,85 @@ impl<D: Draw> StatusBar<D> {
 
         Ok(())
     }
-}
 
-pub enum StatusBarEvent {
-    Startup,
-    ScreensUpdated,
-}
+    pub fn spawn_thread(mut self) {
+        std::thread::spawn(move || {
+            let mut timer = std::time::Instant::now();
 
-pub struct StatusBarHook {
-    sender: Sender,
-}
+            loop {
+                self.poll_events()
+                    .expect("Penrose error while polling events");
 
-impl<X: XConn> Hook<X> for StatusBarHook {
-    fn startup(&mut self, _wm: &mut WindowManager<X>) -> penrose::Result<()> {
-        self.sender
-            .send(StatusBarEvent::Startup)
-            .expect("Failed to send event");
-
-        Ok(())
+                if timer.elapsed() > std::time::Duration::from_secs(1) {
+                    timer = std::time::Instant::now();
+                    self.redraw().expect("Failed to redraw bar");
+                }
+            }
+        });
     }
+}
 
-    fn screens_updated(
-        &mut self,
-        _wm: &mut WindowManager<X>,
-        _dimensions: &[Region],
-    ) -> penrose::Result<()> {
-        self.sender
-            .send(StatusBarEvent::ScreensUpdated)
-            .expect("Failed to send event");
+impl Default for StatusBar<XcbDraw> {
+    fn default() -> Self {
+        let draw = XcbDraw::new().expect("Failed to create XCB draw");
 
-        Ok(())
+        let text_style = TextStyle {
+            font: FIRA.to_string(),
+            point_size: 12,
+            fg: Dracula::FG.into(),
+            bg: None,
+            padding: (3., 3.),
+        };
+
+        Self::try_new(
+            draw,
+            penrose::draw::Position::Top,
+            BAR_HEIGHT,
+            Dracula::BG,
+            &[FIRA],
+            StatusBarWidgets {
+                left: vec![widgets::Text::new(
+                    || {
+                        use chrono::prelude::*;
+
+                        let now = Local::now();
+
+                        Some(now.format("%e %h %Y - %k:%M:%S").to_string())
+                    },
+                    text_style.clone(),
+                )],
+                center: Some(widgets::Text::new(
+                    || {
+                        with_player(|player| {
+                            let metadata = player.get_metadata().ok()?;
+
+                            let title = match metadata.title() {
+                                Some(title) if title.is_empty() => None,
+                                Some(title) => Some(title.to_string()),
+                                None => None,
+                            };
+
+                            let artists = match metadata.artists() {
+                                Some(artists) if artists.is_empty() => None,
+                                Some(artists) => Some(artists.join(", ")),
+                                None => None,
+                            };
+
+                            match (title, artists) {
+                                (Some(title), Some(artists)) => {
+                                    Some(format!("{} - {}", title, artists))
+                                }
+                                (Some(title), None) => Some(title),
+                                (None, Some(artists)) => Some(artists),
+                                _ => None,
+                            }
+                        })
+                    },
+                    text_style.clone(),
+                )),
+                right: vec![widgets::Text::new(|| Some(" ".to_string()), text_style)],
+            },
+        )
+        .expect("Failed to create status bar")
     }
 }
