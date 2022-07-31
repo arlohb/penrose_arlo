@@ -6,6 +6,16 @@
     clippy::module_name_repetitions,
     // False(?) position when ignoring a result.
     clippy::let_underscore_drop,
+    // Is annoying.
+    clippy::cast_precision_loss,
+    // Is annoying.
+    clippy::cast_possible_truncation,
+    // Is annoying.
+    clippy::cast_possible_wrap,
+    // Is annoying.
+    clippy::cast_sign_loss,
+    // Is annoying.
+    clippy::cast_lossless,
 )]
 
 mod key_bindings;
@@ -24,6 +34,8 @@ mod colours;
 pub use colours::*;
 mod x_data;
 pub use x_data::*;
+mod status_bar;
+pub use status_bar::*;
 
 use penrose::{
     common::helpers::spawn,
@@ -34,7 +46,7 @@ use penrose::{
         manager::WindowManager,
         ring::Direction,
     },
-    draw::{Color, Draw, DrawContext, HookableWidget, StatusBar, TextStyle},
+    draw::{Color, Draw, HookableWidget, TextStyle},
     xcb::{XcbConnection, XcbDraw, XcbHooks},
     xconnection::XConn,
     Selector,
@@ -46,9 +58,7 @@ const BAR_HEIGHT: usize = 22;
 
 const FIRA: &str = "FiraCode Nerd Font";
 
-fn create_bar<C: DrawContext, D: Draw<Ctx = C>, X: XConn>(
-    draw: D,
-) -> penrose::Result<StatusBar<C, D, X>> {
+fn create_bar<D: Draw, X: XConn>(draw: D) -> penrose::Result<StatusBar<D, X>> {
     let text_style = TextStyle {
         font: FIRA.to_string(),
         point_size: 12,
@@ -57,7 +67,7 @@ fn create_bar<C: DrawContext, D: Draw<Ctx = C>, X: XConn>(
         padding: (3., 3.),
     };
 
-    Ok(StatusBar::<C, D, X>::try_new(
+    StatusBar::<D, X>::try_new(
         draw,
         penrose::draw::Position::Top,
         BAR_HEIGHT,
@@ -76,7 +86,6 @@ fn create_bar<C: DrawContext, D: Draw<Ctx = C>, X: XConn>(
                 },
                 text_style.clone(),
                 Align::Left,
-                std::time::Duration::from_secs(1),
             ));
 
             widgets.push(ReactiveText::new(
@@ -108,19 +117,17 @@ fn create_bar<C: DrawContext, D: Draw<Ctx = C>, X: XConn>(
                 },
                 text_style.clone(),
                 Align::Center,
-                std::time::Duration::from_secs(5),
             ));
 
             widgets.push(ReactiveText::new(
                 || Some(" ".to_string()),
                 text_style,
                 Align::Right,
-                std::time::Duration::from_secs(5),
             ));
 
             widgets
         },
-    )?)
+    )
 }
 
 #[allow(clippy::too_many_lines)]
@@ -130,7 +137,14 @@ fn main() -> penrose::Result<()> {
 
     let mut clipboard = arboard::Clipboard::new().unwrap();
 
-    let bar = create_bar(XcbDraw::new()?)?;
+    let mut bar: StatusBar<XcbDraw, XcbConnection> = create_bar(XcbDraw::new()?)?;
+    let bar_hook = bar.create_hook();
+
+    std::thread::spawn(move || loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        bar.redraw().expect("Failed to redraw bar");
+    });
 
     // Default number of clients in the main layout area
     let clients_in_main = 1;
@@ -178,7 +192,7 @@ fn main() -> penrose::Result<()> {
     let hooks: XcbHooks = vec![
         LayoutSymbolAsRootName::new(),
         scratch_pad.get_hook(),
-        Box::new(bar),
+        Box::new(bar_hook),
         NewWindowHook::new(),
     ];
 

@@ -16,7 +16,6 @@ pub struct ReactiveText {
     extent: Option<(f64, f64)>,
     screen_dimensions: Option<Vec<Region>>,
     last_updated: std::time::Instant,
-    update_interval: std::time::Duration,
 }
 
 impl ReactiveText {
@@ -24,7 +23,6 @@ impl ReactiveText {
         text: impl FnMut() -> Option<String> + 'static,
         text_style: TextStyle,
         align: Align,
-        update_interval: std::time::Duration,
     ) -> Box<Self> {
         Box::new(Self {
             text: Box::new(text),
@@ -33,7 +31,6 @@ impl ReactiveText {
             extent: None,
             screen_dimensions: None,
             last_updated: std::time::Instant::now(),
-            update_interval,
         })
     }
 
@@ -75,16 +72,11 @@ impl Widget for ReactiveText {
     fn draw(
         &mut self,
         ctx: &mut dyn DrawContext,
-        screen: usize,
+        _screen: usize,
         _screen_has_focus: bool,
-        _w: f64,
+        w: f64,
         h: f64,
     ) -> Result<(), penrose::draw::Error> {
-        let screen_dimensions = self.screen_dimensions.as_ref().ok_or_else(|| {
-            penrose::draw::Error::Raw("Screen dimensions haven't been calculated yet".to_owned())
-        })?;
-        let screen_size = screen_dimensions[screen];
-
         // Update the text.
         let text = self.text();
 
@@ -97,8 +89,8 @@ impl Widget for ReactiveText {
 
         ctx.set_x_offset(match self.align {
             Align::Left => 0.,
-            Align::Center => (f64::from(screen_size.w) - extent.0) / 2.,
-            Align::Right => f64::from(screen_size.w) - extent.0,
+            Align::Center => (w - extent.0) / 2.,
+            Align::Right => w - extent.0,
         });
 
         ctx.text(&text, 1., self.text_style.padding)?;
@@ -124,10 +116,10 @@ impl Widget for ReactiveText {
     }
 
     fn require_draw(&self) -> bool {
-        self.last_updated.elapsed() > self.update_interval
+        panic!("This function shouldn't be called");
     }
 
     fn is_greedy(&self) -> bool {
-        true
+        panic!("This function shouldn't be called");
     }
 }
