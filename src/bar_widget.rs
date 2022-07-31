@@ -1,5 +1,7 @@
 use penrose::draw::DrawContext;
 
+use crate::Align;
+
 pub trait BarWidget {
     /// Render the widget to the status bar.
     ///
@@ -9,6 +11,7 @@ pub trait BarWidget {
     fn draw(
         &mut self,
         ctx: &mut dyn DrawContext,
+        align: Align,
         bar_width: f64,
         bar_height: f64,
     ) -> penrose::draw::Result<()>;

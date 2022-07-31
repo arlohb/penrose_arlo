@@ -11,19 +11,13 @@ pub enum Align {
 pub struct ReactiveText {
     text: Box<dyn FnMut() -> Option<String>>,
     text_style: TextStyle,
-    align: Align,
 }
 
 impl ReactiveText {
-    pub fn new(
-        text: impl FnMut() -> Option<String> + 'static,
-        text_style: TextStyle,
-        align: Align,
-    ) -> Box<Self> {
+    pub fn new(text: impl FnMut() -> Option<String> + 'static, text_style: TextStyle) -> Box<Self> {
         Box::new(Self {
             text: Box::new(text),
             text_style,
-            align,
         })
     }
 
@@ -36,6 +30,7 @@ impl BarWidget for ReactiveText {
     fn draw(
         &mut self,
         ctx: &mut dyn DrawContext,
+        align: Align,
         bar_width: f64,
         _bar_height: f64,
     ) -> penrose::draw::Result<()> {
@@ -44,7 +39,7 @@ impl BarWidget for ReactiveText {
         ctx.font(&self.text_style.font, self.text_style.point_size)?;
         ctx.color(&self.text_style.fg);
 
-        ctx.set_x_offset(match self.align {
+        ctx.set_x_offset(match align {
             Align::Left => 0.,
             Align::Center => (bar_width - extent.0) / 2.,
             Align::Right => bar_width - extent.0,

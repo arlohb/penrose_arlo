@@ -6,17 +6,23 @@ use penrose::{
     WindowManager, Xid,
 };
 
-use crate::BarWidget;
+use crate::{Align, BarWidget};
 
 pub type Sender = std::sync::mpsc::Sender<StatusBarEvent>;
 pub type Receiver = std::sync::mpsc::Receiver<StatusBarEvent>;
+
+pub struct StatusBarWidgets {
+    pub left: Vec<Box<dyn BarWidget>>,
+    pub center: Option<Box<dyn BarWidget>>,
+    pub right: Vec<Box<dyn BarWidget>>,
+}
 
 /// A simple status bar that works via hooks
 pub struct StatusBar<D: Draw> {
     draw: D,
     position: Position,
     /// The widgets contained within this status bar
-    pub widgets: Vec<Box<dyn BarWidget>>,
+    pub widgets: StatusBarWidgets,
     /// (window ID, width)
     screens: Vec<(Xid, f64)>,
     height: usize,
@@ -42,7 +48,7 @@ impl<D: Draw> StatusBar<D> {
         height: usize,
         bg: impl Into<Color>,
         fonts: &[&str],
-        widgets: Vec<Box<dyn BarWidget>>,
+        widgets: StatusBarWidgets,
     ) -> penrose::Result<Self> {
         let (sender, receiver) = std::sync::mpsc::channel();
 
@@ -113,9 +119,18 @@ impl<D: Draw> StatusBar<D> {
             ctx.color(&self.bg);
             ctx.rectangle(0.0, 0.0, width, self.height as f64)?;
 
-            for widget in &mut self.widgets {
-                // I do not care about the active screen
-                widget.draw(&mut ctx, width, self.height as f64)?;
+            for widget in &mut self.widgets.left {
+                widget.draw(&mut ctx, Align::Left, width, self.height as f64)?;
+                ctx.flush();
+            }
+
+            if let Some(widget) = &mut self.widgets.center {
+                widget.draw(&mut ctx, Align::Center, width, self.height as f64)?;
+                ctx.flush();
+            }
+
+            for widget in &mut self.widgets.right {
+                widget.draw(&mut ctx, Align::Right, width, self.height as f64)?;
                 ctx.flush();
             }
 

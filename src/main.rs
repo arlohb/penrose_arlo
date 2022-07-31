@@ -74,10 +74,8 @@ fn create_bar<D: Draw>(draw: D) -> penrose::Result<StatusBar<D>> {
         BAR_HEIGHT,
         Dracula::BG,
         &[FIRA],
-        {
-            let mut widgets: Vec<Box<dyn BarWidget>> = Vec::new();
-
-            widgets.push(ReactiveText::new(
+        StatusBarWidgets {
+            left: vec![ReactiveText::new(
                 || {
                     use chrono::prelude::*;
 
@@ -86,10 +84,8 @@ fn create_bar<D: Draw>(draw: D) -> penrose::Result<StatusBar<D>> {
                     Some(now.format("%e %h %Y - %k:%M:%S").to_string())
                 },
                 text_style.clone(),
-                Align::Left,
-            ));
-
-            widgets.push(ReactiveText::new(
+            )],
+            center: Some(ReactiveText::new(
                 || {
                     with_player(|player| {
                         let metadata = player.get_metadata().ok()?;
@@ -117,16 +113,8 @@ fn create_bar<D: Draw>(draw: D) -> penrose::Result<StatusBar<D>> {
                     })
                 },
                 text_style.clone(),
-                Align::Center,
-            ));
-
-            widgets.push(ReactiveText::new(
-                || Some(" ".to_string()),
-                text_style,
-                Align::Right,
-            ));
-
-            widgets
+            )),
+            right: vec![ReactiveText::new(|| Some(" ".to_string()), text_style)],
         },
     )
 }
