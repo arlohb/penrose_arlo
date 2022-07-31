@@ -115,7 +115,7 @@ impl<D: Draw> StatusBar<D> {
 
             for widget in &mut self.widgets {
                 // I do not care about the active screen
-                widget.draw(&mut ctx, 0, false, width, self.height as f64)?;
+                widget.draw(&mut ctx, width, self.height as f64)?;
                 ctx.flush();
             }
 

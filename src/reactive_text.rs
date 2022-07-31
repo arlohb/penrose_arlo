@@ -38,7 +38,6 @@ impl ReactiveText {
     fn calc_extent(
         &mut self,
         ctx: &mut dyn DrawContext,
-        _h: f64,
     ) -> Result<(f64, f64), penrose::draw::Error> {
         let (l, r) = self.text_style.padding;
 
@@ -55,16 +54,14 @@ impl BarWidget for ReactiveText {
     fn draw(
         &mut self,
         ctx: &mut dyn DrawContext,
-        _screen: usize,
-        _screen_has_focus: bool,
-        w: f64,
-        h: f64,
+        bar_width: f64,
+        _bar_height: f64,
     ) -> Result<(), penrose::draw::Error> {
         // Update the text.
         let text = self.text();
 
         // Recalculate the extent with the new text.
-        self.extent = Some(self.calc_extent(ctx, h)?);
+        self.extent = Some(self.calc_extent(ctx)?);
         let extent = self.extent.unwrap();
 
         ctx.font(&self.text_style.font, self.text_style.point_size)?;
@@ -72,8 +69,8 @@ impl BarWidget for ReactiveText {
 
         ctx.set_x_offset(match self.align {
             Align::Left => 0.,
-            Align::Center => (w - extent.0) / 2.,
-            Align::Right => w - extent.0,
+            Align::Center => (bar_width - extent.0) / 2.,
+            Align::Right => bar_width - extent.0,
         });
 
         ctx.text(&text, 1., self.text_style.padding)?;
@@ -86,12 +83,11 @@ impl BarWidget for ReactiveText {
     fn current_extent(
         &mut self,
         ctx: &mut dyn DrawContext,
-        h: f64,
     ) -> Result<(f64, f64), penrose::draw::Error> {
         match self.extent {
             Some(extent) => Ok(extent),
             None => {
-                let extent = self.calc_extent(ctx, h)?;
+                let extent = self.calc_extent(ctx)?;
                 self.extent = Some(extent);
                 Ok(extent)
             }
