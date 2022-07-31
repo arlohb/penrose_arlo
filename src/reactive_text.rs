@@ -1,7 +1,4 @@
-use penrose::{
-    common::geometry::Region,
-    draw::{DrawContext, TextStyle, Widget},
-};
+use penrose::draw::{DrawContext, TextStyle, Widget};
 
 pub enum Align {
     Left,
@@ -14,7 +11,6 @@ pub struct ReactiveText {
     text_style: TextStyle,
     align: Align,
     extent: Option<(f64, f64)>,
-    screen_dimensions: Option<Vec<Region>>,
     last_updated: std::time::Instant,
 }
 
@@ -29,7 +25,6 @@ impl ReactiveText {
             text_style,
             align,
             extent: None,
-            screen_dimensions: None,
             last_updated: std::time::Instant::now(),
         })
     }
@@ -51,20 +46,6 @@ impl ReactiveText {
         let extent = (w + l + r + 0.1, h + 0.1);
 
         Ok(extent)
-    }
-}
-
-impl<X> penrose::core::Hook<X> for ReactiveText
-where
-    X: penrose::xconnection::XConn,
-{
-    fn screens_updated(
-        &mut self,
-        _wm: &mut penrose::WindowManager<X>,
-        dimensions: &[Region],
-    ) -> penrose::Result<()> {
-        self.screen_dimensions = Some(dimensions.to_vec());
-        Ok(())
     }
 }
 

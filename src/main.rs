@@ -46,9 +46,8 @@ use penrose::{
         manager::WindowManager,
         ring::Direction,
     },
-    draw::{Color, Draw, HookableWidget, TextStyle},
+    draw::{Color, Draw, TextStyle, Widget},
     xcb::{XcbConnection, XcbDraw, XcbHooks},
-    xconnection::XConn,
     Selector,
 };
 
@@ -58,7 +57,7 @@ const BAR_HEIGHT: usize = 22;
 
 const FIRA: &str = "FiraCode Nerd Font";
 
-fn create_bar<D: Draw, X: XConn>(draw: D) -> penrose::Result<StatusBar<D, X>> {
+fn create_bar<D: Draw>(draw: D) -> penrose::Result<StatusBar<D>> {
     let text_style = TextStyle {
         font: FIRA.to_string(),
         point_size: 12,
@@ -67,14 +66,14 @@ fn create_bar<D: Draw, X: XConn>(draw: D) -> penrose::Result<StatusBar<D, X>> {
         padding: (3., 3.),
     };
 
-    StatusBar::<D, X>::try_new(
+    StatusBar::<D>::try_new(
         draw,
         penrose::draw::Position::Top,
         BAR_HEIGHT,
         Dracula::BG,
         &[FIRA],
         {
-            let mut widgets: Vec<Box<dyn HookableWidget<X>>> = Vec::new();
+            let mut widgets: Vec<Box<dyn Widget>> = Vec::new();
 
             widgets.push(ReactiveText::new(
                 || {
@@ -137,13 +136,21 @@ fn main() -> penrose::Result<()> {
 
     let mut clipboard = arboard::Clipboard::new().unwrap();
 
-    let mut bar: StatusBar<XcbDraw, XcbConnection> = create_bar(XcbDraw::new()?)?;
+    let mut bar: StatusBar<XcbDraw> = create_bar(XcbDraw::new()?)?;
     let bar_hook = bar.create_hook();
 
-    std::thread::spawn(move || loop {
-        std::thread::sleep(std::time::Duration::from_secs(1));
+    std::thread::spawn(move || {
+        let mut timer = std::time::Instant::now();
 
-        bar.redraw().expect("Failed to redraw bar");
+        loop {
+            bar.poll_events()
+                .expect("Penrose error while polling events");
+
+            if timer.elapsed() > std::time::Duration::from_secs(1) {
+                timer = std::time::Instant::now();
+                bar.redraw().expect("Failed to redraw bar");
+            }
+        }
     });
 
     // Default number of clients in the main layout area

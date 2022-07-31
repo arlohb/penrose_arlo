@@ -1,7 +1,7 @@
 use penrose::{
     common::geometry::Region,
     core::Hook,
-    draw::{Color, Draw, DrawContext, HookableWidget, Position},
+    draw::{Color, Draw, DrawContext, Position, Widget},
     xconnection::{Atom, Prop, WinType, XConn},
     WindowManager, Xid,
 };
@@ -10,11 +10,11 @@ pub type Sender = std::sync::mpsc::Sender<StatusBarEvent>;
 pub type Receiver = std::sync::mpsc::Receiver<StatusBarEvent>;
 
 /// A simple status bar that works via hooks
-pub struct StatusBar<D: Draw, X: XConn> {
+pub struct StatusBar<D: Draw> {
     draw: D,
     position: Position,
     /// The widgets contained within this status bar
-    pub widgets: Vec<Box<dyn HookableWidget<X>>>,
+    pub widgets: Vec<Box<dyn Widget>>,
     /// (window ID, width)
     screens: Vec<(Xid, f64)>,
     height: usize,
@@ -25,10 +25,10 @@ pub struct StatusBar<D: Draw, X: XConn> {
 
 // I don't know if this is safe or not
 #[allow(clippy::non_send_fields_in_send_ty)]
-unsafe impl<D: Draw, X: XConn> Send for StatusBar<D, X> {}
-unsafe impl<D: Draw, X: XConn> Sync for StatusBar<D, X> {}
+unsafe impl<D: Draw> Send for StatusBar<D> {}
+unsafe impl<D: Draw> Sync for StatusBar<D> {}
 
-impl<D: Draw, X: XConn> StatusBar<D, X> {
+impl<D: Draw> StatusBar<D> {
     /// Try to initialise a new empty status bar.
     ///
     /// # Errors
@@ -40,7 +40,7 @@ impl<D: Draw, X: XConn> StatusBar<D, X> {
         height: usize,
         bg: impl Into<Color>,
         fonts: &[&str],
-        widgets: Vec<Box<dyn HookableWidget<X>>>,
+        widgets: Vec<Box<dyn Widget>>,
     ) -> penrose::Result<Self> {
         let (sender, receiver) = std::sync::mpsc::channel();
 
