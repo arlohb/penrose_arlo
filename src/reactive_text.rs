@@ -1,4 +1,6 @@
-use penrose::draw::{DrawContext, TextStyle, Widget};
+use penrose::draw::{DrawContext, TextStyle};
+
+use crate::BarWidget;
 
 pub enum Align {
     Left,
@@ -49,7 +51,7 @@ impl ReactiveText {
     }
 }
 
-impl Widget for ReactiveText {
+impl BarWidget for ReactiveText {
     fn draw(
         &mut self,
         ctx: &mut dyn DrawContext,
@@ -94,13 +96,5 @@ impl Widget for ReactiveText {
                 Ok(extent)
             }
         }
-    }
-
-    fn require_draw(&self) -> bool {
-        panic!("This function shouldn't be called");
-    }
-
-    fn is_greedy(&self) -> bool {
-        panic!("This function shouldn't be called");
     }
 }

@@ -1,10 +1,12 @@
 use penrose::{
     common::geometry::Region,
     core::Hook,
-    draw::{Color, Draw, DrawContext, Position, Widget},
+    draw::{Color, Draw, DrawContext, Position},
     xconnection::{Atom, Prop, WinType, XConn},
     WindowManager, Xid,
 };
+
+use crate::BarWidget;
 
 pub type Sender = std::sync::mpsc::Sender<StatusBarEvent>;
 pub type Receiver = std::sync::mpsc::Receiver<StatusBarEvent>;
@@ -14,7 +16,7 @@ pub struct StatusBar<D: Draw> {
     draw: D,
     position: Position,
     /// The widgets contained within this status bar
-    pub widgets: Vec<Box<dyn Widget>>,
+    pub widgets: Vec<Box<dyn BarWidget>>,
     /// (window ID, width)
     screens: Vec<(Xid, f64)>,
     height: usize,
@@ -40,7 +42,7 @@ impl<D: Draw> StatusBar<D> {
         height: usize,
         bg: impl Into<Color>,
         fonts: &[&str],
-        widgets: Vec<Box<dyn Widget>>,
+        widgets: Vec<Box<dyn BarWidget>>,
     ) -> penrose::Result<Self> {
         let (sender, receiver) = std::sync::mpsc::channel();
 

@@ -36,6 +36,8 @@ mod x_data;
 pub use x_data::*;
 mod status_bar;
 pub use status_bar::*;
+mod bar_widget;
+pub use bar_widget::*;
 
 use penrose::{
     common::helpers::spawn,
@@ -46,7 +48,7 @@ use penrose::{
         manager::WindowManager,
         ring::Direction,
     },
-    draw::{Color, Draw, TextStyle, Widget},
+    draw::{Color, Draw, TextStyle},
     xcb::{XcbConnection, XcbDraw, XcbHooks},
     Selector,
 };
@@ -73,7 +75,7 @@ fn create_bar<D: Draw>(draw: D) -> penrose::Result<StatusBar<D>> {
         Dracula::BG,
         &[FIRA],
         {
-            let mut widgets: Vec<Box<dyn Widget>> = Vec::new();
+            let mut widgets: Vec<Box<dyn BarWidget>> = Vec::new();
 
             widgets.push(ReactiveText::new(
                 || {
