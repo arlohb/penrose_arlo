@@ -34,15 +34,15 @@ impl BarWidget for ReactiveText {
         bar_width: f64,
         _bar_height: f64,
     ) -> penrose::draw::Result<()> {
-        let extent = self.current_extent(ctx)?;
+        let current_width = self.current_width(ctx)?;
 
         ctx.font(&self.text_style.font, self.text_style.point_size)?;
         ctx.color(&self.text_style.fg);
 
         ctx.set_x_offset(match align {
             Align::Left => 0.,
-            Align::Center => (bar_width - extent.0) / 2.,
-            Align::Right => bar_width - extent.0,
+            Align::Center => (bar_width - current_width) / 2.,
+            Align::Right => bar_width - current_width,
         });
 
         ctx.text(&self.text(), 1., self.text_style.padding)?;
@@ -50,14 +50,14 @@ impl BarWidget for ReactiveText {
         Ok(())
     }
 
-    fn current_extent(&mut self, ctx: &mut dyn DrawContext) -> penrose::draw::Result<(f64, f64)> {
+    fn current_width(&mut self, ctx: &mut dyn DrawContext) -> penrose::draw::Result<f64> {
         let (l, r) = self.text_style.padding;
 
         ctx.font(&self.text_style.font, self.text_style.point_size)?;
 
-        let (w, h) = ctx.text_extent(&self.text())?;
-        let extent = (w + l + r + 0.1, h + 0.1);
+        let unpadded = ctx.text_extent(&self.text())?.0;
+        let padded = unpadded + l + r + 0.1;
 
-        Ok(extent)
+        Ok(padded)
     }
 }

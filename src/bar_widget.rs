@@ -16,10 +16,10 @@ pub trait BarWidget {
         bar_height: f64,
     ) -> penrose::draw::Result<()>;
 
-    /// The width and height required by this widget.
+    /// The width required by this widget.
     ///
     /// # Errors
     ///
     /// Returns an error if the widget fails to calculate its extent.
-    fn current_extent(&mut self, ctx: &mut dyn DrawContext) -> penrose::draw::Result<(f64, f64)>;
+    fn current_width(&mut self, ctx: &mut dyn DrawContext) -> penrose::draw::Result<f64>;
 }
