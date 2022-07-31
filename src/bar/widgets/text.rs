@@ -1,19 +1,13 @@
 use penrose::draw::{DrawContext, TextStyle};
 
-use crate::BarWidget;
+use crate::{Align, BarWidget};
 
-pub enum Align {
-    Left,
-    Center,
-    Right,
-}
-
-pub struct ReactiveText {
+pub struct Text {
     text: Box<dyn FnMut() -> Option<String>>,
     text_style: TextStyle,
 }
 
-impl ReactiveText {
+impl Text {
     pub fn new(text: impl FnMut() -> Option<String> + 'static, text_style: TextStyle) -> Box<Self> {
         Box::new(Self {
             text: Box::new(text),
@@ -26,7 +20,7 @@ impl ReactiveText {
     }
 }
 
-impl BarWidget for ReactiveText {
+impl BarWidget for Text {
     fn draw(
         &mut self,
         ctx: &mut dyn DrawContext,

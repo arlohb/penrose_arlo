@@ -22,8 +22,6 @@ mod key_bindings;
 pub use key_bindings::*;
 mod new_window_hook;
 pub use new_window_hook::*;
-mod reactive_text;
-pub use reactive_text::*;
 mod setup;
 pub use setup::*;
 mod wm_ext;
@@ -34,10 +32,8 @@ mod colours;
 pub use colours::*;
 mod x_data;
 pub use x_data::*;
-mod status_bar;
-pub use status_bar::*;
-mod bar_widget;
-pub use bar_widget::*;
+mod bar;
+pub use bar::*;
 
 use penrose::{
     common::helpers::spawn,
@@ -75,7 +71,7 @@ fn create_bar<D: Draw>(draw: D) -> penrose::Result<StatusBar<D>> {
         Dracula::BG,
         &[FIRA],
         StatusBarWidgets {
-            left: vec![ReactiveText::new(
+            left: vec![widgets::Text::new(
                 || {
                     use chrono::prelude::*;
 
@@ -85,7 +81,7 @@ fn create_bar<D: Draw>(draw: D) -> penrose::Result<StatusBar<D>> {
                 },
                 text_style.clone(),
             )],
-            center: Some(ReactiveText::new(
+            center: Some(widgets::Text::new(
                 || {
                     with_player(|player| {
                         let metadata = player.get_metadata().ok()?;
@@ -114,7 +110,7 @@ fn create_bar<D: Draw>(draw: D) -> penrose::Result<StatusBar<D>> {
                 },
                 text_style.clone(),
             )),
-            right: vec![ReactiveText::new(|| Some(" ".to_string()), text_style)],
+            right: vec![widgets::Text::new(|| Some(" ".to_string()), text_style)],
         },
     )
 }

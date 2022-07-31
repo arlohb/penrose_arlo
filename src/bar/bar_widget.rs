@@ -1,6 +1,10 @@
 use penrose::draw::DrawContext;
 
-use crate::Align;
+pub enum Align {
+    Left,
+    Center,
+    Right,
+}
 
 pub trait BarWidget {
     /// Render the widget to the status bar.
