@@ -12,8 +12,8 @@ pub trait BarWidget {
         &mut self,
         ctx: &mut dyn DrawContext,
         align: Align,
-        bar_width: f64,
-        bar_height: f64,
+        bar_width: usize,
+        bar_height: usize,
     ) -> penrose::draw::Result<()>;
 
     /// The width required by this widget.
@@ -21,5 +21,5 @@ pub trait BarWidget {
     /// # Errors
     ///
     /// Returns an error if the widget fails to calculate its extent.
-    fn current_width(&mut self, ctx: &mut dyn DrawContext) -> penrose::draw::Result<f64>;
+    fn current_width(&mut self, ctx: &mut dyn DrawContext) -> penrose::draw::Result<usize>;
 }

@@ -24,7 +24,7 @@ pub struct StatusBar<D: Draw> {
     /// The widgets contained within this status bar
     pub widgets: StatusBarWidgets,
     /// (window ID, width)
-    screens: Vec<(Xid, f64)>,
+    screens: Vec<(Xid, usize)>,
     height: usize,
     bg: Color,
     sender: Sender,
@@ -98,9 +98,9 @@ impl<D: Draw> StatusBar<D> {
                 }
 
                 self.draw.flush(id)?;
-                Ok((id, r.w as f64))
+                Ok((id, r.w as usize))
             })
-            .collect::<penrose::Result<Vec<(u32, f64)>>>()?;
+            .collect::<penrose::Result<Vec<(u32, usize)>>>()?;
 
         Ok(())
     }
@@ -117,20 +117,20 @@ impl<D: Draw> StatusBar<D> {
             ctx.clear()?;
 
             ctx.color(&self.bg);
-            ctx.rectangle(0.0, 0.0, width, self.height as f64)?;
+            ctx.rectangle(0.0, 0.0, width as f64, self.height as f64)?;
 
             for widget in &mut self.widgets.left {
-                widget.draw(&mut ctx, Align::Left, width, self.height as f64)?;
+                widget.draw(&mut ctx, Align::Left, width, self.height)?;
                 ctx.flush();
             }
 
             if let Some(widget) = &mut self.widgets.center {
-                widget.draw(&mut ctx, Align::Center, width, self.height as f64)?;
+                widget.draw(&mut ctx, Align::Center, width, self.height)?;
                 ctx.flush();
             }
 
             for widget in &mut self.widgets.right {
-                widget.draw(&mut ctx, Align::Right, width, self.height as f64)?;
+                widget.draw(&mut ctx, Align::Right, width, self.height)?;
                 ctx.flush();
             }
 
