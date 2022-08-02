@@ -252,16 +252,24 @@ impl Default for StatusBar<XcbDraw> {
                             let metadata = player.get_metadata().ok()?;
 
                             let title = match metadata.title() {
-                                Some(title) if title.is_empty() => None,
+                                Some(title) if title.trim().is_empty() => None,
                                 Some(title) => Some(title.to_string()),
                                 None => None,
                             };
 
-                            let artists = match metadata.artists() {
-                                Some(artists) if artists.is_empty() => None,
-                                Some(artists) => Some(artists.join(", ")),
-                                None => None,
-                            };
+                            let artists = metadata.artists().and_then(|artists| {
+                                let artists = artists
+                                    .iter()
+                                    .filter(|a| !a.trim().is_empty())
+                                    .map(|a| a as &str)
+                                    .collect::<Vec<_>>();
+
+                                if artists.is_empty() {
+                                    None
+                                } else {
+                                    Some(artists.join(", "))
+                                }
+                            });
 
                             match (title, artists) {
                                 (Some(title), Some(artists)) => {
