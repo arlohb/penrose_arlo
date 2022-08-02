@@ -1,17 +1,22 @@
-use penrose::draw::{DrawContext, TextStyle};
+use std::sync::Arc;
 
-use crate::{Align, BarWidget};
+use penrose::draw::DrawContext;
+
+use crate::{Align, BarWidget, WidgetStyle};
 
 pub struct Text {
     text: Box<dyn FnMut() -> Option<String>>,
-    text_style: TextStyle,
+    widget_style: Arc<WidgetStyle>,
 }
 
 impl Text {
-    pub fn new(text: impl FnMut() -> Option<String> + 'static, text_style: TextStyle) -> Box<Self> {
+    pub fn new(
+        text: impl FnMut() -> Option<String> + 'static,
+        widget_style: Arc<WidgetStyle>,
+    ) -> Box<Self> {
         Box::new(Self {
             text: Box::new(text),
-            text_style,
+            widget_style,
         })
     }
 
@@ -24,37 +29,39 @@ impl BarWidget for Text {
     fn draw(
         &mut self,
         ctx: &mut dyn DrawContext,
+        font: &str,
         align: Align,
+        offset: usize,
         bar_width: usize,
         _bar_height: usize,
-    ) -> penrose::draw::Result<()> {
-        let current_width = self.current_width(ctx)?;
+    ) -> penrose::draw::Result<usize> {
+        let current_width = self.current_width(ctx, font)?;
 
-        ctx.font(&self.text_style.font, self.text_style.point_size)?;
-        ctx.color(&self.text_style.fg);
+        ctx.font(font, self.widget_style.text_size as i32)?;
+        ctx.color(&self.widget_style.fg);
 
         ctx.set_x_offset(match align {
-            Align::Left => 0,
-            Align::Center => (bar_width - current_width) / 2,
-            Align::Right => bar_width - current_width,
+            Align::Left => offset,
+            Align::Center => (bar_width - current_width) / 2 + offset,
+            Align::Right => bar_width - current_width - offset,
         } as f64);
 
-        ctx.text(&self.text(), 1., self.text_style.padding)?;
+        ctx.set_y_offset(self.widget_style.y_offset as f64);
 
-        Ok(())
+        ctx.text(&self.text(), 1., (0., 0.))?;
+
+        Ok(current_width + self.widget_style.x_padding)
     }
 
-    fn current_width(&mut self, ctx: &mut dyn DrawContext) -> penrose::draw::Result<usize> {
-        let (l, r) = (
-            self.text_style.padding.0 as usize,
-            self.text_style.padding.1 as usize,
-        );
+    fn current_width(
+        &mut self,
+        ctx: &mut dyn DrawContext,
+        font: &str,
+    ) -> penrose::draw::Result<usize> {
+        ctx.font(font, self.widget_style.text_size as i32)?;
 
-        ctx.font(&self.text_style.font, self.text_style.point_size)?;
+        let width = ctx.text_extent(&self.text())?.0 as usize;
 
-        let unpadded = ctx.text_extent(&self.text())?.0 as usize;
-        let padded = unpadded + l + r;
-
-        Ok(padded)
+        Ok(width + self.widget_style.x_padding)
     }
 }

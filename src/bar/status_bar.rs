@@ -1,13 +1,15 @@
+use std::sync::Arc;
+
 use penrose::{
     common::geometry::Region,
     core::Hook,
-    draw::{Color, Draw, DrawContext, Position, TextStyle},
+    draw::{Color, Draw, DrawContext, Position},
     xcb::XcbDraw,
     xconnection::{Atom, Prop, WinType, XConn},
     WindowManager, Xid,
 };
 
-use crate::{widgets, with_player, Align, BarWidget, Dracula, BAR_HEIGHT, FIRA};
+use crate::{widgets, with_player, Align, BarWidget, Dracula, WidgetStyle, BAR_HEIGHT, FONT};
 
 pub type Sender = std::sync::mpsc::Sender<StatusBarEvent>;
 pub type Receiver = std::sync::mpsc::Receiver<StatusBarEvent>;
@@ -52,6 +54,7 @@ pub struct StatusBarWidgets {
 /// A simple status bar that works via hooks
 pub struct StatusBar<D: Draw> {
     draw: D,
+    font: &'static str,
     position: Position,
     /// The widgets contained within this status bar
     pub widgets: StatusBarWidgets,
@@ -76,16 +79,17 @@ impl<D: Draw + 'static> StatusBar<D> {
     /// If we are unable to create our window, then we return an error
     pub fn try_new(
         drw: D,
+        font: &'static str,
         position: Position,
         height: usize,
         bg: impl Into<Color>,
-        fonts: &[&str],
         widgets: StatusBarWidgets,
     ) -> penrose::Result<Self> {
         let (sender, receiver) = std::sync::mpsc::channel();
 
         let mut bar = Self {
             draw: drw,
+            font,
             position,
             widgets,
             screens: vec![],
@@ -95,7 +99,8 @@ impl<D: Draw + 'static> StatusBar<D> {
             receiver,
         };
         bar.init_for_screens()?;
-        fonts.iter().for_each(|f| bar.draw.register_font(f));
+
+        bar.draw.register_font(font);
 
         Ok(bar)
     }
@@ -151,18 +156,30 @@ impl<D: Draw + 'static> StatusBar<D> {
             ctx.color(&self.bg);
             ctx.rectangle(0.0, 0.0, width as f64, self.height as f64)?;
 
+            let mut offset: usize = 0;
+
             for widget in &mut self.widgets.left {
-                widget.draw(&mut ctx, Align::Left, width, self.height)?;
+                offset +=
+                    widget.draw(&mut ctx, self.font, Align::Left, offset, width, self.height)?;
                 ctx.flush();
             }
 
             if let Some(widget) = &mut self.widgets.center {
-                widget.draw(&mut ctx, Align::Center, width, self.height)?;
+                widget.draw(&mut ctx, self.font, Align::Center, 0, width, self.height)?;
                 ctx.flush();
             }
 
+            offset = 0;
+
             for widget in &mut self.widgets.right {
-                widget.draw(&mut ctx, Align::Right, width, self.height)?;
+                offset += widget.draw(
+                    &mut ctx,
+                    self.font,
+                    Align::Right,
+                    offset,
+                    width,
+                    self.height,
+                )?;
                 ctx.flush();
             }
 
@@ -217,35 +234,39 @@ impl<D: Draw + 'static> StatusBar<D> {
     }
 }
 
+#[allow(clippy::unicode_not_nfc)]
 impl Default for StatusBar<XcbDraw> {
     fn default() -> Self {
         let draw = XcbDraw::new().expect("Failed to create XCB draw");
 
-        let text_style = TextStyle {
-            font: FIRA.to_string(),
-            point_size: 12,
+        let widget_style = Arc::new(WidgetStyle {
+            x_padding: 4,
+            y_offset: 0,
             fg: Dracula::FG.into(),
-            bg: None,
-            padding: (3., 3.),
-        };
+            bg: Dracula::BG.into(),
+            text_size: 12,
+        });
 
         Self::try_new(
             draw,
+            FONT,
             penrose::draw::Position::Top,
             BAR_HEIGHT,
             Dracula::BG,
-            &[FIRA],
             StatusBarWidgets {
-                left: vec![widgets::Text::new(
-                    || {
-                        use chrono::prelude::*;
+                left: vec![
+                    widgets::Text::new(|| Some("  ".to_string()), widget_style.clone()),
+                    widgets::Text::new(
+                        || {
+                            use chrono::prelude::*;
 
-                        let now = Local::now();
+                            let now = Local::now();
 
-                        Some(now.format("%e %h %Y - %k:%M:%S").to_string())
-                    },
-                    text_style.clone(),
-                )],
+                            Some(now.format("%e %h %Y - %k:%M:%S").to_string())
+                        },
+                        widget_style.clone(),
+                    ),
+                ],
                 center: Some(widgets::Text::new(
                     || {
                         with_player(|player| {
@@ -281,9 +302,19 @@ impl Default for StatusBar<XcbDraw> {
                             }
                         })
                     },
-                    text_style.clone(),
+                    widget_style.clone(),
                 )),
-                right: vec![widgets::Text::new(|| Some(" ".to_string()), text_style)],
+                right: vec![
+                    widgets::Text::new(|| Some(" ".to_string()), widget_style.clone()),
+                    widgets::Text::new(
+                        || Some("墳 ".to_string()),
+                        Arc::new(WidgetStyle {
+                            y_offset: -2,
+                            text_size: 14,
+                            ..*widget_style
+                        }),
+                    ),
+                ],
             },
         )
         .expect("Failed to create status bar")

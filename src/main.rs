@@ -53,7 +53,7 @@ use std::collections::HashMap;
 
 const BAR_HEIGHT: usize = 22;
 
-const FIRA: &str = "FiraCode Nerd Font";
+const FONT: &str = "FiraCode Nerd Font";
 
 #[allow(clippy::too_many_lines)]
 fn main() -> penrose::Result<()> {
