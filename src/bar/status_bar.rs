@@ -229,6 +229,8 @@ impl<D: Draw + 'static> StatusBar<D> {
                     timer = std::time::Instant::now();
                     self.redraw().expect("Failed to redraw bar");
                 }
+
+                std::thread::sleep(std::time::Duration::from_millis(10));
             }
         });
     }
