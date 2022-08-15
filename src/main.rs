@@ -32,8 +32,6 @@ mod colours;
 pub use colours::*;
 mod x_data;
 pub use x_data::*;
-mod bar;
-pub use bar::*;
 mod window_switcher;
 pub use window_switcher::*;
 pub mod layouts;
@@ -43,15 +41,13 @@ use penrose::{
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
     core::{config::Config, manager::WindowManager, ring::Direction},
     draw::Color,
-    xcb::{XcbConnection, XcbDraw, XcbHooks},
+    xcb::{XcbConnection, XcbHooks},
     Selector,
 };
 
 use std::collections::HashMap;
 
-const BAR_HEIGHT: usize = 22;
-
-const FONT: &str = "FiraCode Nerd Font";
+const BAR_HEIGHT: usize = 26;
 
 #[allow(clippy::too_many_lines)]
 fn main() -> penrose::Result<()> {
@@ -59,11 +55,6 @@ fn main() -> penrose::Result<()> {
     std::thread::spawn(async_setup);
 
     let mut clipboard = arboard::Clipboard::new().unwrap();
-
-    let bar: StatusBar<XcbDraw> = StatusBar::default();
-    let bar_hook = bar.create_hook();
-
-    bar.spawn_thread();
 
     let mut config_builder = Config::default().builder();
     let config = config_builder
@@ -90,7 +81,6 @@ fn main() -> penrose::Result<()> {
     let hooks: XcbHooks = vec![
         LayoutSymbolAsRootName::new(),
         scratch_pad.get_hook(),
-        Box::new(bar_hook),
         NewWindowHook::new(),
     ];
 
