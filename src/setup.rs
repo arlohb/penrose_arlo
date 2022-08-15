@@ -53,6 +53,4 @@ pub fn async_setup() {
     let _ = spawn("picom --experimental-backends");
 
     let _ = spawn("setxkbmap -option caps:escape");
-
-    let _ = run_script(format!("{}/.config/polybar/launch.sh", home()), false);
 }

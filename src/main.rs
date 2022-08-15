@@ -47,8 +47,6 @@ use penrose::{
 
 use std::collections::HashMap;
 
-const BAR_HEIGHT: usize = 26;
-
 #[allow(clippy::too_many_lines)]
 fn main() -> penrose::Result<()> {
     setup_logger();
@@ -67,12 +65,8 @@ fn main() -> penrose::Result<()> {
         // Layouts to be used on each workspace. Currently all workspaces have the same set of Layouts
         // available to them, though they track modifications to n_main and ratio independently.
         .layouts(layouts::layouts())
-        .bar_height(
-            BAR_HEIGHT
-                .try_into()
-                .expect("Bar height doesn't fit into a u32"),
-        )
-        .gap_px(8)
+        .show_bar(false)
+        .gap_px(12)
         .build()
         .unwrap();
 
