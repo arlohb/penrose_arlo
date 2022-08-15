@@ -34,16 +34,14 @@ mod x_data;
 pub use x_data::*;
 mod bar;
 pub use bar::*;
+mod window_switcher;
+pub use window_switcher::*;
+pub mod layouts;
 
 use penrose::{
     common::helpers::spawn,
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
-    core::{
-        config::Config,
-        layout::{bottom_stack, side_stack, Layout, LayoutConf},
-        manager::WindowManager,
-        ring::Direction,
-    },
+    core::{config::Config, manager::WindowManager, ring::Direction},
     draw::Color,
     xcb::{XcbConnection, XcbDraw, XcbHooks},
     Selector,
@@ -67,12 +65,6 @@ fn main() -> penrose::Result<()> {
 
     bar.spawn_thread();
 
-    // Default number of clients in the main layout area
-    let clients_in_main = 1;
-
-    // Default percentage of the screen to fill with the main area of the layout
-    let main_to_min_ratio = 0.6;
-
     let mut config_builder = Config::default().builder();
     let config = config_builder
         .workspaces(vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"])
@@ -83,22 +75,7 @@ fn main() -> penrose::Result<()> {
         .unfocused_border(Color::new_from_hex(Dracula::BG).as_rgb_hex_string())?
         // Layouts to be used on each workspace. Currently all workspaces have the same set of Layouts
         // available to them, though they track modifications to n_main and ratio independently.
-        .layouts(vec![
-            Layout::new(
-                "[side]",
-                LayoutConf::default(),
-                side_stack,
-                clients_in_main,
-                main_to_min_ratio,
-            ),
-            Layout::new(
-                "[botm]",
-                LayoutConf::default(),
-                bottom_stack,
-                clients_in_main,
-                main_to_min_ratio,
-            ),
-        ])
+        .layouts(layouts::layouts())
         .bar_height(
             BAR_HEIGHT
                 .try_into()
@@ -159,23 +136,38 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
-    keys.add("super shift J", |wm| {
+    keys.add("super shift H", |wm| {
         wm.cycle_client_to_screen(Direction::Backward)?;
         Ok(())
     });
 
-    keys.add("super shift semicolon", |wm| {
+    keys.add("super shift L", |wm| {
         wm.cycle_client_to_screen(Direction::Forward)?;
         Ok(())
     });
 
-    keys.add("super semicolon", |wm| {
-        wm.cycle_client(Direction::Forward)?;
+    keys.add("super H", |wm| {
+        wm.switch_focus_in_direction(SwitchDirection::Left)?;
+        Ok(())
+    });
+
+    keys.add("super L", |wm| {
+        wm.switch_focus_in_direction(SwitchDirection::Right)?;
         Ok(())
     });
 
     keys.add("super J", |wm| {
-        wm.cycle_client(Direction::Backward)?;
+        wm.switch_focus_in_direction(SwitchDirection::Down)?;
+        Ok(())
+    });
+
+    keys.add("super K", |wm| {
+        wm.switch_focus_in_direction(SwitchDirection::Up)?;
+        Ok(())
+    });
+
+    keys.add("super G", |wm| {
+        wm.cycle_layout(Direction::Forward)?;
         Ok(())
     });
 
