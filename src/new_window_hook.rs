@@ -1,4 +1,7 @@
-use penrose::{common::geometry::Point, core::Hook, xconnection::XConn, Selector};
+use penrose::{
+    core::{data_types::Point, xconnection::XConn, Hook},
+    Selector,
+};
 
 use crate::X_DATA;
 

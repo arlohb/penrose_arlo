@@ -37,9 +37,8 @@ pub use window_switcher::*;
 pub mod layouts;
 
 use penrose::{
-    common::helpers::spawn,
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
-    core::{config::Config, manager::WindowManager, ring::Direction},
+    core::{config::Config, helpers::spawn, manager::WindowManager, ring::Direction},
     draw::Color,
     xcb::{XcbConnection, XcbHooks},
     Selector,

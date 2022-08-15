@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use penrose::{common::geometry::Region, Xid};
+use penrose::{core::data_types::Region, Xid};
 
 use lazy_static::lazy_static;
 

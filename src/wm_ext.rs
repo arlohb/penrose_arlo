@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use penrose::{
-    common::geometry::Region, core::ring::Direction, xconnection::XConn, Selector, WindowManager,
+    core::{data_types::Region, ring::Direction, xconnection::XConn},
+    PenroseError, Selector, WindowManager,
 };
 
 use crate::{SwitchDirection, CLIENT_REGIONS};
@@ -74,7 +75,7 @@ impl<X: XConn> WindowManagerExt for WindowManager<X> {
 
         let regions = CLIENT_REGIONS
             .read()
-            .map_err(|_| penrose::Error::Raw("CLIENT_REGIONS RwLock poisoned".into()))?
+            .map_err(|_| PenroseError::Raw("CLIENT_REGIONS RwLock poisoned".into()))?
             .clone();
 
         let current = region_center(&regions[&current_client]);

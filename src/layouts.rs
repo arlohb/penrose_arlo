@@ -1,6 +1,6 @@
-use penrose::{
-    common::geometry::{Region, ResizeAction},
-    core::{layout::LayoutConf, Client, Layout},
+use penrose::core::{
+    data_types::{Region, ResizeAction},
+    Client, Layout, LayoutConf,
 };
 use std::collections::HashMap;
 
