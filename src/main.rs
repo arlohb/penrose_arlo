@@ -110,7 +110,7 @@ fn main() -> penrose::Result<()> {
     });
 
     keys.add("super B", |_wm| {
-        spawn("google-chrome")?;
+        spawn("google-chrome-stable")?;
         Ok(())
     });
 
