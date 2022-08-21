@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Penrose Arlo
 Comment=This is a window manager based on Penrose in Rust
-Exec=/home/arlo/penrose_arlo/target/release/penrose_arlo
+Exec=/home/arlo/.local/share/penrose_arlo/target/release/penrose_arlo
 Type=Application
 DesktopNames=PenroseArlo

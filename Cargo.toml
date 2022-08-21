@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-penrose = { path = "../Code/penrose" }
+penrose = { path = "../penrose" }
 simplelog = "0.12"
 tracing = "0.1"
 mpris = "1.1"

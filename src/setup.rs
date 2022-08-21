@@ -46,7 +46,7 @@ pub fn run_script(path: impl AsRef<std::ffi::OsStr>, wait: bool) -> std::io::Res
 }
 
 pub fn async_setup() {
-    let _ = run_script(format!("{}/penrose_arlo/screens.sh", home()), true);
+    let _ = run_script(format!("{}/.local/share/penrose_arlo/screens.sh", home()), true);
 
     let _ = spawn("nitrogen --restore");
 
