@@ -114,6 +114,11 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
+    keys.add("super shift B", |_wm| {
+        spawn("google-chrome-stable --incognito")?;
+        Ok(())
+    });
+
     keys.add("super tab", |wm| {
         wm.drag_client(Direction::Forward)?;
         Ok(())
