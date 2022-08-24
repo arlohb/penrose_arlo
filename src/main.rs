@@ -159,6 +159,18 @@ fn main() -> penrose::Result<()> {
         Ok(())
     });
 
+    for i in 1..=9 {
+        keys.add(format!("super {i}"), move |wm| {
+            wm.focus_workspace(&Selector::Index(i - 1))?;
+            Ok(())
+        });
+
+        keys.add(format!("super shift {i}"), move |wm| {
+            wm.client_to_workspace(&Selector::Index(i - 1))?;
+            Ok(())
+        });
+    }
+
     // Used `xev` to find the names for these
 
     keys.add("XF86AudioRaiseVolume", |_wm| {
