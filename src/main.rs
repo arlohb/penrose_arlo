@@ -80,7 +80,7 @@ fn main() -> penrose::Result<()> {
     let mut keys = BetterKeyBindings::new();
 
     keys.add("super space", |_wm| {
-        spawn("rofi -show run")?;
+        spawn("rofi -modi drun -show drun")?;
         Ok(())
     });
 
