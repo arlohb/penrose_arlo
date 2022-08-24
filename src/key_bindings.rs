@@ -20,7 +20,7 @@ pub type KnownCodes = HashMap<String, u8>;
 
 pub struct BetterKeyBindings<X: XConn + 'static> {
     codes: KnownCodes,
-    bindings: HashMap<&'static str, Box<BindingFn<X>>>,
+    bindings: HashMap<String, Box<BindingFn<X>>>,
 }
 
 impl<X: XConn + 'static> Default for BetterKeyBindings<X> {
@@ -68,10 +68,10 @@ impl<X: XConn + 'static> BetterKeyBindings<X> {
 
     pub fn add(
         &mut self,
-        key: &'static str,
+        key: impl Into<String>,
         func: impl FnMut(&mut WindowManager<X>) -> penrose::Result<()> + 'static,
     ) {
-        self.bindings.insert(key, Box::new(func));
+        self.bindings.insert(key.into(), Box::new(func));
     }
 
     #[must_use]
@@ -79,7 +79,7 @@ impl<X: XConn + 'static> BetterKeyBindings<X> {
         self.bindings
             .into_iter()
             .map(|(key_str, mut func)| {
-                let key = Self::key_parse(&self.codes, key_str);
+                let key = Self::key_parse(&self.codes, &key_str);
 
                 let penrose_fn: Box<BindingFn<X>> =
                     Box::new(move |wm: &mut WindowManager<X>| func(wm));
