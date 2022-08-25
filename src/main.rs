@@ -16,6 +16,10 @@
     clippy::cast_sign_loss,
     // Is annoying.
     clippy::cast_lossless,
+    // Makes code less readable
+    clippy::redundant_closure_for_method_calls,
+    // I'm doing this on purpose so that func calls are done on start instead of on errors
+    clippy::or_fun_call
 )]
 
 mod key_bindings;
@@ -79,92 +83,79 @@ fn main() -> penrose::Result<()> {
 
     let mut keys = BetterKeyBindings::new();
 
-    keys.add("super space", |_wm| {
-        spawn("rofi -modi drun -show drun")?;
-        Ok(())
-    });
-
-    keys.add("super ctrl escape", |wm| {
-        wm.exit()?;
-        Ok(())
-    });
-
-    keys.add("super T", |_wm| {
-        spawn("kitty")?;
-        Ok(())
-    });
-
-    keys.add("super Q", |wm| {
-        wm.kill_client()?;
-        Ok(())
-    });
-
-    keys.add("super E", |_wm| {
-        spawn("thunar")?;
-        Ok(())
-    });
-
-    keys.add("super slash", move |wm| {
-        (scratch_pad.toggle())(wm)?;
-        Ok(())
-    });
-
-    keys.add("super B", |_wm| {
-        spawn("google-chrome-stable")?;
-        Ok(())
-    });
-
+    // Program runners
+    keys.add("super T", |_wm| spawn("kitty"));
+    keys.add("super E", |_wm| spawn("thunar"));
+    keys.add("super B", |_wm| spawn("google-chrome-stable"));
     keys.add("super shift B", |_wm| {
-        spawn("google-chrome-stable --incognito")?;
-        Ok(())
+        spawn("google-chrome-stable --incognito")
     });
 
-    keys.add("super tab", |wm| {
-        wm.drag_client(Direction::Forward)?;
-        Ok(())
+    // Other runners
+    keys.add("super space", |_wm| spawn("rofi -modi drun -show drun"));
+    keys.add("super slash", move |wm| (scratch_pad.toggle())(wm));
+
+    // Penrose commands
+    keys.add("super ctrl escape", |wm| wm.exit());
+    keys.add("super G", |wm| wm.cycle_layout(Direction::Forward));
+    keys.add("super C", move |wm| {
+        clipboard
+            .set_text(
+                wm.client(&Selector::Focused)
+                    .ok_or(penrose::PenroseError::Raw("No focused client".to_string()))?
+                    .wm_class()
+                    .to_string(),
+            )
+            .map_err(|_| penrose::PenroseError::Raw("Failed to save to clipboard".to_string()))
     });
 
-    keys.add("super shift H", |wm| {
-        wm.cycle_client_to_screen(Direction::Backward)?;
-        Ok(())
-    });
+    // Client management
+    keys.add("super Q", |wm| wm.kill_client());
 
-    keys.add("super shift L", |wm| {
-        wm.cycle_client_to_screen(Direction::Forward)?;
-        Ok(())
-    });
+    // Stuff in all 4 directions
+    for (key_options, direction) in [
+        (["H", "left"], SwitchDirection::Left),
+        (["L", "right"], SwitchDirection::Right),
+        (["K", "up"], SwitchDirection::Up),
+        (["J", "down"], SwitchDirection::Down),
+    ] {
+        for key in key_options {
+            // Switching between clients
+            keys.add(format!("super {key}"), move |wm| {
+                wm.switch_focus_in_direction(direction)
+            });
+        }
+    }
 
-    keys.add("super H", |wm| {
-        wm.switch_focus_in_direction(SwitchDirection::Left)?;
-        Ok(())
-    });
+    keys.add("super tab", |wm| wm.drag_client(Direction::Forward));
 
-    keys.add("super L", |wm| {
-        wm.switch_focus_in_direction(SwitchDirection::Right)?;
-        Ok(())
-    });
+    // Stuff in only 2 directions
+    for (key_options, direction) in [
+        (["H", "left"], Direction::Backward),
+        (["L", "right"], Direction::Forward),
+    ] {
+        for key in key_options {
+            // Move client to screen
+            keys.add(format!("super shift {key}"), move |wm| {
+                wm.cycle_client_to_screen(direction)
+            });
 
-    keys.add("super J", |wm| {
-        wm.switch_focus_in_direction(SwitchDirection::Down)?;
-        Ok(())
-    });
+            // Move to workspace
+            keys.add(format!("super ctrl {key}"), move |wm| {
+                wm.cycle_workspace(direction)
+            });
+        }
+    }
 
-    keys.add("super K", |wm| {
-        wm.switch_focus_in_direction(SwitchDirection::Up)?;
-        Ok(())
-    });
-
-    keys.add("super G", |wm| {
-        wm.cycle_layout(Direction::Forward)?;
-        Ok(())
-    });
-
-    for i in 1..=9 {
+    // Workspace management
+    for i in config.ws_range() {
+        // Switch to workspace i
         keys.add(format!("super {i}"), move |wm| {
             wm.focus_workspace(&Selector::Index(i - 1))?;
             Ok(())
         });
 
+        // Move client to workspace i
         keys.add(format!("super shift {i}"), move |wm| {
             wm.client_to_workspace(&Selector::Index(i - 1))?;
             Ok(())
@@ -173,62 +164,36 @@ fn main() -> penrose::Result<()> {
 
     // Used `xev` to find the names for these
 
-    keys.add("XF86AudioRaiseVolume", |_wm| {
-        spawn("amixer set Master 5%+")?;
-        Ok(())
-    });
+    // Volume control
+    keys.add("XF86AudioRaiseVolume", |_wm| spawn("amixer set Master 5%+"));
+    keys.add("XF86AudioLowerVolume", |_wm| spawn("amixer set Master 5%-"));
+    keys.add("XF86AudioMute", |_wm| spawn("amixer set Master toggle"));
 
-    keys.add("XF86AudioLowerVolume", |_wm| {
-        spawn("amixer set Master 5%-")?;
-        Ok(())
-    });
-
-    keys.add("XF86AudioMute", |_wm| {
-        spawn("amixer set Master toggle")?;
-        Ok(())
-    });
-
+    // Playback control
     keys.add("XF86AudioPlay", |_wm| {
-        let _ = with_player(|player| player.play_pause().ok());
-        Ok(())
+        with_player(|player| player.play_pause().ok()).ok_or(penrose::PenroseError::Raw(
+            "Audio control failed".to_string(),
+        ))
     });
-
     keys.add("super P", |_wm| {
-        let _ = with_player(|player| player.play_pause().ok());
-        Ok(())
+        with_player(|player| player.play_pause().ok()).ok_or(penrose::PenroseError::Raw(
+            "Audio control failed".to_string(),
+        ))
     });
-
     keys.add("XF86AudioStop", |_wm| {
-        let _ = with_player(|player| player.stop().ok());
-        Ok(())
+        with_player(|player| player.stop().ok()).ok_or(penrose::PenroseError::Raw(
+            "Audio control failed".to_string(),
+        ))
     });
-
     keys.add("XF86AudioNext", |_wm| {
-        let _ = with_player(|player| player.next().ok());
-        Ok(())
+        with_player(|player| player.next().ok()).ok_or(penrose::PenroseError::Raw(
+            "Audio control failed".to_string(),
+        ))
     });
-
     keys.add("XF86AudioPrev", |_wm| {
-        let _ = with_player(|player| player.previous().ok());
-        Ok(())
-    });
-
-    keys.add("super C", move |wm| {
-        let client_id = match wm.focused_client_id() {
-            Some(id) => id,
-            None => return Ok(()),
-        };
-
-        let client = match wm.client(&Selector::WinId(client_id)) {
-            Some(client) => client,
-            None => return Ok(()),
-        };
-
-        let class = client.wm_class();
-
-        let _ = clipboard.set_text(class.to_string());
-
-        Ok(())
+        with_player(|player| player.previous().ok()).ok_or(penrose::PenroseError::Raw(
+            "Audio control failed".to_string(),
+        ))
     });
 
     let mut wm = WindowManager::new(

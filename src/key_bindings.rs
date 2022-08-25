@@ -81,8 +81,11 @@ impl<X: XConn + 'static> BetterKeyBindings<X> {
             .map(|(key_str, mut func)| {
                 let key = Self::key_parse(&self.codes, &key_str);
 
-                let penrose_fn: Box<BindingFn<X>> =
-                    Box::new(move |wm: &mut WindowManager<X>| func(wm));
+                let penrose_fn: Box<BindingFn<X>> = Box::new(move |wm: &mut WindowManager<X>| {
+                    // I don't care if this fails, the show must go on
+                    let _ = func(wm);
+                    Ok(())
+                });
 
                 (key, penrose_fn)
             })
