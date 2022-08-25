@@ -80,21 +80,21 @@ fn main() -> penrose::Result<()> {
     let mut keys = BetterKeyBindings::new();
 
     // Program runners
-    keys.add("super T", |_wm| spawn("kitty"));
-    keys.add("super E", |_wm| spawn("thunar"));
-    keys.add("super B", |_wm| spawn("google-chrome-stable"));
-    keys.add("super shift B", |_wm| {
+    keys.add("meta T", |_wm| spawn("kitty"));
+    keys.add("meta E", |_wm| spawn("thunar"));
+    keys.add("meta B", |_wm| spawn("google-chrome-stable"));
+    keys.add("meta shift B", |_wm| {
         spawn("google-chrome-stable --incognito")
     });
 
     // Other runners
-    keys.add("super space", |_wm| spawn("rofi -modi drun -show drun"));
-    keys.add("super slash", move |wm| (scratch_pad.toggle())(wm));
+    keys.add("meta space", |_wm| spawn("rofi -modi drun -show drun"));
+    keys.add("meta slash", move |wm| (scratch_pad.toggle())(wm));
 
     // Penrose commands
-    keys.add("super ctrl escape", |wm| wm.exit());
-    keys.add("super G", |wm| wm.cycle_layout(Direction::Forward));
-    keys.add("super C", move |wm| {
+    keys.add("meta ctrl escape", |wm| wm.exit());
+    keys.add("meta G", |wm| wm.cycle_layout(Direction::Forward));
+    keys.add("meta C", move |wm| {
         clipboard
             .set_text(
                 wm.client(&Selector::Focused)
@@ -106,7 +106,7 @@ fn main() -> penrose::Result<()> {
     });
 
     // Client management
-    keys.add("super Q", |wm| wm.kill_client());
+    keys.add("meta Q", |wm| wm.kill_client());
 
     // Stuff in all 4 directions
     for (key_options, direction) in [
@@ -117,13 +117,13 @@ fn main() -> penrose::Result<()> {
     ] {
         for key in key_options {
             // Switching between clients
-            keys.add(format!("super {key}"), move |wm| {
+            keys.add(format!("meta {key}"), move |wm| {
                 wm.switch_focus_in_direction(direction)
             });
         }
     }
 
-    keys.add("super tab", |wm| wm.drag_client(Direction::Forward));
+    keys.add("meta tab", |wm| wm.drag_client(Direction::Forward));
 
     // Stuff in only 2 directions
     for (key_options, direction) in [
@@ -132,12 +132,12 @@ fn main() -> penrose::Result<()> {
     ] {
         for key in key_options {
             // Move client to screen
-            keys.add(format!("super shift {key}"), move |wm| {
+            keys.add(format!("meta shift {key}"), move |wm| {
                 wm.cycle_client_to_screen(direction)
             });
 
             // Move to workspace
-            keys.add(format!("super ctrl {key}"), move |wm| {
+            keys.add(format!("meta ctrl {key}"), move |wm| {
                 wm.cycle_workspace(direction)
             });
         }
@@ -146,13 +146,13 @@ fn main() -> penrose::Result<()> {
     // Workspace management
     for i in config.ws_range() {
         // Switch to workspace i
-        keys.add(format!("super {i}"), move |wm| {
+        keys.add(format!("meta {i}"), move |wm| {
             wm.focus_workspace(&Selector::Index(i - 1))?;
             Ok(())
         });
 
         // Move client to workspace i
-        keys.add(format!("super shift {i}"), move |wm| {
+        keys.add(format!("meta shift {i}"), move |wm| {
             wm.client_to_workspace(&Selector::Index(i - 1))?;
             Ok(())
         });
@@ -171,7 +171,7 @@ fn main() -> penrose::Result<()> {
             "Audio control failed".to_string(),
         ))
     });
-    keys.add("super P", |_wm| {
+    keys.add("meta P", |_wm| {
         with_player(|player| player.play_pause().ok()).ok_or(penrose::PenroseError::Raw(
             "Audio control failed".to_string(),
         ))

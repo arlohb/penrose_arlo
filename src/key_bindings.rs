@@ -10,7 +10,7 @@ pub struct KeyMod;
 impl KeyMod {
     pub const NONE: u16 = 0;
     pub const ALT: u16 = 8;
-    pub const SUPER: u16 = 64;
+    pub const META: u16 = 64;
     pub const SHIFT: u16 = 1;
     pub const CTRL: u16 = 4;
 }
@@ -51,7 +51,7 @@ impl<X: XConn + 'static> BetterKeyBindings<X> {
 
         for modifier in parts {
             key_mod |= match modifier {
-                "super" => KeyMod::SUPER,
+                "meta" => KeyMod::META,
                 "alt" => KeyMod::ALT,
                 "shift" => KeyMod::SHIFT,
                 "ctrl" => KeyMod::CTRL,
