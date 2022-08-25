@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use penrose::{
-    core::{bindings::KeyCode, xconnection::XConn},
+    core::{bindings::KeyCode, xconnection::XConn, KeyEventHandler},
     WindowManager,
 };
 
@@ -15,12 +15,11 @@ impl KeyMod {
     pub const CTRL: u16 = 4;
 }
 
-pub type BindingFn<X> = dyn FnMut(&mut WindowManager<X>) -> penrose::Result<()>;
 pub type KnownCodes = HashMap<String, u8>;
 
 pub struct BetterKeyBindings<X: XConn + 'static> {
     codes: KnownCodes,
-    bindings: HashMap<String, Box<BindingFn<X>>>,
+    bindings: HashMap<String, KeyEventHandler<X>>,
 }
 
 impl<X: XConn + 'static> Default for BetterKeyBindings<X> {
@@ -75,13 +74,13 @@ impl<X: XConn + 'static> BetterKeyBindings<X> {
     }
 
     #[must_use]
-    pub fn into_penrose_bindings(self) -> HashMap<KeyCode, Box<BindingFn<X>>> {
+    pub fn into_penrose_bindings(self) -> HashMap<KeyCode, KeyEventHandler<X>> {
         self.bindings
             .into_iter()
             .map(|(key_str, mut func)| {
                 let key = Self::key_parse(&self.codes, &key_str);
 
-                let penrose_fn: Box<BindingFn<X>> = Box::new(move |wm: &mut WindowManager<X>| {
+                let penrose_fn: KeyEventHandler<X> = Box::new(move |wm: &mut WindowManager<X>| {
                     // I don't care if this fails, the show must go on
                     let _ = func(wm);
                     Ok(())
