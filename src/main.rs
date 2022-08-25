@@ -57,21 +57,17 @@ fn main() -> penrose::Result<()> {
 
     let mut clipboard = arboard::Clipboard::new().unwrap();
 
-    let mut config_builder = Config::default().builder();
-    let config = config_builder
-        .workspaces(vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"])
-        // Windows with a matching WM_CLASS will always float
-        // java = minecraft?
-        .floating_classes(vec!["gnome-screenshot", "java"])
-        .focused_border(Color::new_from_hex(Dracula::PURPLE).as_rgb_hex_string())?
-        .unfocused_border(Color::new_from_hex(Dracula::BG).as_rgb_hex_string())?
-        // Layouts to be used on each workspace. Currently all workspaces have the same set of Layouts
-        // available to them, though they track modifications to n_main and ratio independently.
-        .layouts(layouts::layouts())
-        .show_bar(false)
-        .gap_px(12)
-        .build()
-        .unwrap();
+    let config = Config {
+        workspaces: (1..=9).map(|i| i.to_string()).collect::<Vec<_>>(),
+        floating_classes: vec!["gnome-screenshot".to_string(), "java".to_string()],
+        focused_border: Color::new_from_hex(Dracula::PURPLE),
+        unfocused_border: Color::new_from_hex(Dracula::BG),
+        layouts: layouts::layouts(),
+        show_bar: false,
+        gap_px: 12,
+        ..Default::default()
+    }
+    .validate()?;
 
     let scratch_pad = Scratchpad::new("mousepad", 0.8, 0.8);
 
