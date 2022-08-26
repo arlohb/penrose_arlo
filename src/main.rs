@@ -82,10 +82,8 @@ fn main() -> penrose::Result<()> {
     // Program runners
     keys.add("meta T", |_wm| spawn("kitty"));
     keys.add("meta E", |_wm| spawn("thunar"));
-    keys.add("meta B", |_wm| spawn("google-chrome-stable"));
-    keys.add("meta shift B", |_wm| {
-        spawn("google-chrome-stable --incognito")
-    });
+    keys.add("meta B", |_wm| spawn("vivaldi"));
+    keys.add("meta shift B", |_wm| spawn("vivaldi --incognito"));
 
     // Other runners
     keys.add("meta space", |_wm| spawn("rofi -modi drun -show drun"));
