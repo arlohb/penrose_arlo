@@ -42,9 +42,11 @@ pub mod layouts;
 
 use penrose::{
     contrib::{extensions::Scratchpad, hooks::LayoutSymbolAsRootName},
-    core::{config::Config, helpers::spawn, manager::WindowManager, ring::Direction},
+    core::{
+        config::Config, helpers::spawn, hooks::HooksVec, manager::WindowManager, ring::Direction,
+    },
     draw::Color,
-    xcb::{XcbConnection, XcbHooks},
+    xcb::XcbConnection,
     Selector,
 };
 
@@ -71,7 +73,7 @@ fn main() -> penrose::Result<()> {
 
     let scratch_pad = Scratchpad::new("mousepad", 0.8, 0.8);
 
-    let hooks: XcbHooks = vec![
+    let hooks: HooksVec<_> = vec![
         LayoutSymbolAsRootName::new(),
         scratch_pad.get_hook(),
         NewWindowHook::new(),
